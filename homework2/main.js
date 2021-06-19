@@ -40,9 +40,10 @@ function main() {
         return d * Math.PI / 180;
     }
 
-    var translation = [100, 150, 0];
-    var rotation = [degToRad(40), degToRad(25), degToRad(325)];
-    var scale = [1, 1, 1];
+    var cubetranslation = [100, 150, 0];
+    var linetranslation = [300, 150, 0];
+    var fivetranslation = [300, 150, 0];
+
 
     requestAnimationFrame(drawScene);
 
@@ -61,8 +62,11 @@ function main() {
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        var rotation = [-time, time, 0];
+        var cuberotation = [-time, time, 0];
+        var linerotation = [0, time, 0];
+        var fiverotation = [0, time, 0];
 
+        // ---绘制立方体--- BEGIN
         // 使用我们的程序
         gl.useProgram(program);
 
@@ -107,11 +111,9 @@ function main() {
         // 创建一个矩阵，可以将原点移动到立方体的中心
         var moveOriginMatrix = m4.translation(-50, -50, -50);
         var matrix = m4.orthographic(left, right, bottom, top, near, far);
-        matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);
-        matrix = m4.xRotate(matrix, rotation[0]);
-        matrix = m4.yRotate(matrix, rotation[1]);
-        matrix = m4.zRotate(matrix, rotation[2]);
-        matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
+        matrix = m4.translate(matrix, cubetranslation[0], cubetranslation[1], cubetranslation[2]);
+        matrix = m4.xRotate(matrix, cuberotation[0]);
+        matrix = m4.yRotate(matrix, cuberotation[1]);
         matrix = m4.multiply(matrix, moveOriginMatrix);
 
         // 设置矩阵
@@ -122,6 +124,117 @@ function main() {
         var offset = 0;
         var count = 6 * 6;
         gl.drawArrays(primitiveType, offset, count);
+        // ---绘制立方体--- END
+
+        // ---绘制五角星--- BEGIN
+        // 使用我们的程序
+        gl.useProgram(program);
+
+        // 启用属性
+        gl.enableVertexAttribArray(positionLocation);
+
+        // 绑定位置缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+
+        // 告诉属性怎么从positionBuffer中读取数据 (ARRAY_BUFFER)
+        var size = 3;          // 每次迭代运行提取两个单位数据
+        var type = gl.FLOAT;   // 每个单位的数据类型是32位浮点型
+        var normalize = false; // 不需要归一化数据
+        var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）
+        var offset = 0;        // 从缓冲起始位置开始读取
+        gl.vertexAttribPointer(
+            positionLocation, size, type, normalize, stride, offset)
+
+        // 启用颜色属性
+        gl.enableVertexAttribArray(colorLocation);
+
+        // 绑定颜色缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+        var size = 3;                 // 每次迭代使用3个单位的数据
+        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+        var offset = 0;               // 从绑定缓冲的起始处开始
+        gl.vertexAttribPointer(
+            colorLocation, size, type, normalize, stride, offset)
+
+        // 计算矩阵
+        var left = 0;
+        var right = gl.canvas.clientWidth;
+        var bottom = gl.canvas.clientHeight;
+        var top = 0;
+        var near = 400;
+        var far = -400;
+        var matrix = m4.orthographic(left, right, top, bottom, near, far);
+        matrix = m4.translate(matrix, linetranslation[0], linetranslation[1], linetranslation[2]);
+        matrix = m4.yRotate(matrix, linerotation[1]);
+
+        // 设置矩阵
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+        // 绘制几何体
+        var primitiveType = gl.LINE_LOOP;
+        var offset = 6 * 6;
+        var count = 5;
+        gl.drawArrays(primitiveType, offset, count);
+
+        // 使用我们的程序
+        gl.useProgram(program);
+
+        // 启用属性
+        gl.enableVertexAttribArray(positionLocation);
+
+        // 绑定位置缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+
+        // 告诉属性怎么从positionBuffer中读取数据 (ARRAY_BUFFER)
+        var size = 3;          // 每次迭代运行提取两个单位数据
+        var type = gl.FLOAT;   // 每个单位的数据类型是32位浮点型
+        var normalize = false; // 不需要归一化数据
+        var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）
+        var offset = 0;        // 从缓冲起始位置开始读取
+        gl.vertexAttribPointer(
+            positionLocation, size, type, normalize, stride, offset)
+
+        // 启用颜色属性
+        gl.enableVertexAttribArray(colorLocation);
+
+        // 绑定颜色缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+        var size = 3;                 // 每次迭代使用3个单位的数据
+        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+        var offset = 0;               // 从绑定缓冲的起始处开始
+        gl.vertexAttribPointer(
+            colorLocation, size, type, normalize, stride, offset)
+
+        // 计算矩阵
+        var left = 0;
+        var right = gl.canvas.clientWidth;
+        var bottom = gl.canvas.clientHeight;
+        var top = 0;
+        var near = 400;
+        var far = -400;
+        var matrix = m4.orthographic(left, right, top, bottom, near, far);
+        matrix = m4.translate(matrix, fivetranslation[0], fivetranslation[1], fivetranslation[2]);
+        matrix = m4.yRotate(matrix, fiverotation[1]);
+
+        // 设置矩阵
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+        // 绘制几何体
+        var primitiveType = gl.TRIANGLE_FAN;
+        var offset = 6 * 6 + 5;
+        var count = 5;
+        gl.drawArrays(primitiveType, offset, count);
+        // ---绘制五角星--- END
 
         requestAnimationFrame(drawScene);
     }
@@ -271,6 +384,7 @@ var m4 = {
 
 // 在缓冲存储构成立方体的顶点的值
 function setGeometry(gl) {
+    var t = (1 + Math.tan(Math.PI / 10) * Math.tan(Math.PI / 10)) / (3 - Math.tan(Math.PI / 10) * Math.tan(Math.PI / 10));
     gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array([
@@ -320,7 +434,19 @@ function setGeometry(gl) {
             0, 100, 100,
             0, 0, 0,
             0, 100, 100,
-            0, 100, 0]),
+            0, 100, 0,
+
+            100 * 0, 100 * 1, 0,//A
+            100 * Math.cos(Math.PI * 3 / 10), 100 * -1 * Math.sin(Math.PI * 3 / 10), 0,//C
+            100 * -1 * Math.cos(Math.PI / 10), 100 * Math.sin(Math.PI / 10), 0,//E
+            100 * Math.cos(Math.PI / 10), 100 * Math.sin(Math.PI / 10), 0,//B
+            100 * -1 * Math.cos(Math.PI * 3 / 10), 100 * -1 * Math.sin(Math.PI * 3 / 10), 0,//D
+
+            100 * 0, 100 * -t, 0,
+            100 * -1 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0,
+            100 * -1 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
+            100 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
+            100 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0]),
         gl.STATIC_DRAW);
 }
 
@@ -375,7 +501,20 @@ function setColors(gl) {
             0, 255, 255,
             0, 0, 0,
             0, 255, 255,
-            0, 255, 0]),
+            0, 255, 0,
+
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+
+            255, 255, 0,
+            255, 255, 0,
+            255, 255, 0,
+            255, 255, 0,
+            255, 255, 0,
+        ]),
         gl.STATIC_DRAW);
 }
 

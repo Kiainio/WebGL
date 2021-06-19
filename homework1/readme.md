@@ -104,5 +104,6 @@ $EE(t*\cos18^{\circ},-t*\sin18^{\circ})$.
 ## 03 效果展示
 
 [main.html]: ./main.html
+[github]: https://kiainio.github.io/WebGL/homework1/main.html
 
 ![result](./result.png)
