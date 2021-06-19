@@ -40,12 +40,22 @@ function main() {
         return d * Math.PI / 180;
     }
 
-    var cubetranslation = [100, 150, 0];
-    var linetranslation = [300, 150, 0];
-    var fivetranslation = [300, 150, 0];
+    var fieldOfViewRadians = degToRad(60);
 
+    var cubetranslation = [-200, 0, -360];
+    var linetranslation = [0, 0, -360];
+    var fivetranslation = [0, 0, -360];
+    var spheretranslation = [200, 0, -360];
 
     requestAnimationFrame(drawScene);
+
+    // Setup a ui.
+    webglLessonsUI.setupSlider("#fieldOfView", { value: radToDeg(fieldOfViewRadians), slide: updateFieldOfView, min: 1, max: 179 });
+
+    function updateFieldOfView(event, ui) {
+        fieldOfViewRadians = degToRad(ui.value);
+        drawScene();
+    }
 
     // 绘制场景
     function drawScene(time) {
@@ -65,6 +75,7 @@ function main() {
         var cuberotation = [-time, time, 0];
         var linerotation = [0, time, 0];
         var fiverotation = [0, time, 0];
+        var sphererotation = [-time, time, -time];
 
         // ---绘制立方体--- BEGIN
         // 使用我们的程序
@@ -102,15 +113,12 @@ function main() {
             colorLocation, size, type, normalize, stride, offset)
 
         // 计算矩阵
-        var left = 0;
-        var right = gl.canvas.clientWidth;
-        var bottom = gl.canvas.clientHeight;
-        var top = 0;
-        var near = 400;
-        var far = -400;
+        var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        var zNear = 1;
+        var zFar = 2000;
         // 创建一个矩阵，可以将原点移动到立方体的中心
         var moveOriginMatrix = m4.translation(-50, -50, -50);
-        var matrix = m4.orthographic(left, right, bottom, top, near, far);
+        var matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
         matrix = m4.translate(matrix, cubetranslation[0], cubetranslation[1], cubetranslation[2]);
         matrix = m4.xRotate(matrix, cuberotation[0]);
         matrix = m4.yRotate(matrix, cuberotation[1]);
@@ -128,13 +136,7 @@ function main() {
 
         // ---绘制五角星--- BEGIN
         // 计算矩阵
-        var left = 0;
-        var right = gl.canvas.clientWidth;
-        var bottom = gl.canvas.clientHeight;
-        var top = 0;
-        var near = 400;
-        var far = -400;
-        var matrix = m4.orthographic(left, right, top, bottom, near, far);
+        var matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
         matrix = m4.translate(matrix, linetranslation[0], linetranslation[1], linetranslation[2]);
         matrix = m4.yRotate(matrix, linerotation[1]);
 
@@ -148,13 +150,7 @@ function main() {
         gl.drawArrays(primitiveType, offset, count);
 
         // 计算矩阵
-        var left = 0;
-        var right = gl.canvas.clientWidth;
-        var bottom = gl.canvas.clientHeight;
-        var top = 0;
-        var near = 400;
-        var far = -400;
-        var matrix = m4.orthographic(left, right, top, bottom, near, far);
+        var matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
         matrix = m4.translate(matrix, fivetranslation[0], fivetranslation[1], fivetranslation[2]);
         matrix = m4.yRotate(matrix, fiverotation[1]);
 
@@ -168,11 +164,55 @@ function main() {
         gl.drawArrays(primitiveType, offset, count);
         // ---绘制五角星--- END
 
+        // ---绘制球体--- BEGIN
+        var matrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+        matrix = m4.translate(matrix, spheretranslation[0], spheretranslation[1], spheretranslation[2]);
+        matrix = m4.xRotate(matrix, sphererotation[0]);
+        matrix = m4.yRotate(matrix, sphererotation[1]);
+        matrix = m4.yRotate(matrix, sphererotation[1]);
+        matrix = m4.scale(matrix, 100, 100, 100);
+
+        // 设置矩阵
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
+
+        // 绘制几何体
+        var primitiveType = gl.TRIANGLES;
+        var offset = 6 * 6 + 10;
+        var count = index;
+        gl.drawArrays(primitiveType, offset, count);
+        // ---绘制球体--- END
+
         requestAnimationFrame(drawScene);
     }
 }
 
+function normalize(v) {
+    var length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    // 确定不会除以 0
+    if (length > 0.00001) {
+        return [v[0] / length, v[1] / length, v[2] / length];
+    } else {
+        return [0, 0, 0];
+    }
+}
+
+function mix(x, y, num) {
+    return [(x[0] + y[0]) * num, (x[1] + y[1]) * num, (x[2] + y[2]) * num];
+}
+
 var m4 = {
+    perspective: function (fieldOfViewInRadians, aspect, near, far) {
+        var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
+        var rangeInv = 1.0 / (near - far);
+
+        return [
+            f / aspect, 0, 0, 0,
+            0, f, 0, 0,
+            0, 0, (near + far) * rangeInv, -1,
+            0, 0, near * far * rangeInv * 2, 0
+        ];
+    },
+
     translation: function (tx, ty, tz) {
         return [
             1, 0, 0, 0,
@@ -314,12 +354,55 @@ var m4 = {
     },
 };
 
-// 在缓冲存储构成立方体的顶点的值
+var index = 0;
+var spherePointsArray = new Array();
+var sphereColorsArray = new Array();
+
+
+// 在缓冲存储顶点的值
 function setGeometry(gl) {
     var t = (1 + Math.tan(Math.PI / 10) * Math.tan(Math.PI / 10)) / (3 - Math.tan(Math.PI / 10) * Math.tan(Math.PI / 10));
+
+    var va = [0, 0, -1];
+    var vb = [0, 0.942809, 0.333333];
+    var vc = [-0.816497, -0.471405, 0.333333];
+    var vd = [0.816497, -0.471405, 0.333333];
+
+    tetrahedron(va, vb, vc, vd, 4);
+
+    function tetrahedron(a, b, c, d, n) {
+        devideTriangle(a, b, c, n);
+        devideTriangle(d, c, b, n);
+        devideTriangle(a, d, b, n);
+        devideTriangle(a, c, d, n);
+    }
+
+    function devideTriangle(a, b, c, count) {
+        if (count > 0) {
+            var ab = normalize(mix(a, b, 0.5));
+            var ac = normalize(mix(a, c, 0.5));
+            var bc = normalize(mix(b, c, 0.5));
+
+            devideTriangle(a, ab, ac, count - 1);
+            devideTriangle(ab, b, bc, count - 1);
+            devideTriangle(bc, c, ac, count - 1);
+            devideTriangle(ab, bc, ac, count - 1);
+        }
+        else {
+            spherePointsArray = spherePointsArray.concat(a);
+            spherePointsArray = spherePointsArray.concat(b);
+            spherePointsArray = spherePointsArray.concat(c);
+            sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
+            sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
+            sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
+            index += 3;
+        }
+    }
+
     gl.bufferData(
         gl.ARRAY_BUFFER,
-        new Float32Array([
+        //(new Float32Array([
+        Float32Array.from((new Array(
             // 正面
             0, 0, 0,
             0, 100, 0,
@@ -378,15 +461,22 @@ function setGeometry(gl) {
             100 * -1 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0,
             100 * -1 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
             100 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
-            100 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0]),
+            100 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0)).concat(spherePointsArray)),
         gl.STATIC_DRAW);
 }
 
 // 向缓冲传入顶点的颜色值
 function setColors(gl) {
+    for (var ii = 0; ii < index; ii++) {
+        sphereColorsArray.push(255);
+        sphereColorsArray.push(0);
+        sphereColorsArray.push(0);
+    }
+
     gl.bufferData(
         gl.ARRAY_BUFFER,
-        new Uint8Array([
+        //(new Uint8Array([
+        Uint8Array.from((new Array(
             // 正面
             0, 0, 0,
             0, 255, 0,
@@ -446,7 +536,7 @@ function setColors(gl) {
             255, 255, 0,
             255, 255, 0,
             255, 255, 0,
-        ]),
+        )).concat(sphereColorsArray)),
         gl.STATIC_DRAW);
 }
 
