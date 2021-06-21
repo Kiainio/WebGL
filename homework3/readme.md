@@ -100,7 +100,8 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 ## 03 效果展示
 
-[main.html]: ./main.html
-[github]: https://kiainio.github.io/WebGL/homework3/main.html
+[方向光源]: ./lighting-directional.html
+[github]: https://kiainio.github.io/WebGL/homework3/lighting-directional.html
 
 ![result](./result.png)
+
