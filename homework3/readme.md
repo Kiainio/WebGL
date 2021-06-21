@@ -90,7 +90,9 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 将物体放到视图范围内，对立方体、五角星和球体进行适当平移。
 
-设置滑块，可以调节视角大小。
+![perspective](./perspective.png)
+
+可明显观察到“近大远小”的透视效果。
 
 ### 3. 光照
 
