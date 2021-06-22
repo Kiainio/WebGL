@@ -96,12 +96,33 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 ### 3. 光照
 
+#### 1）方向光源
+
+给物体设置法向量，其中球体的法向量用三点的坐标叉乘得到。为方便观察效果，将立方体及球体更改为单色。
+
+同时，在物体重定向时重定向法向量，使面朝相机的一面被照亮。
+
+![方向光源](./lighting-directional.png)
+
+#### 2）点光源
+
+相比于方向光源，点光源根据光源和表面位置计算光照方向。
+
+同时，加上镜面高光，当方向一致时，光线反射。
+
+![点光源](./lighting-point.png)
+
+#### 4）聚光灯
+
+在点光源的基础上，设置限定范围，当光线不在限定范围时不照亮。使用内部限定和外部限定两个限定值，两者之间使用插值。
+
+![lighting-spot](./lighting-spot.png)
+
+### 4. 阴影
+
 
 
 ## 03 效果展示
 
 [方向光源]: ./lighting-directional.html
 [github]: https://kiainio.github.io/WebGL/homework3/lighting-directional.html
-
-![result](./result.png)
-

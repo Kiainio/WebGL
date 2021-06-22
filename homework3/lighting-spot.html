@@ -1,7 +1,6 @@
-<canvas id="canvas" width="400" height="300"></canvas>
+<canvas id="canvas" width="600" height="300"></canvas>
 <div id="uiContainer">
     <div id="ui">
-        <div id="fRotation"></div>
         <div id="lightRotationX"></div>
         <div id="lightRotationY"></div>
         <div id="innerLimit"></div>
@@ -19,18 +18,19 @@
     uniform vec3 u_viewWorldPosition;
 
     uniform mat4 u_world;
-    //uniform mat4 u_matrix;
     uniform mat4 u_worldViewProjection;
     uniform mat4 u_worldInverseTranspose;
+     
+    //uniform mat4 u_matrix;
     //varying vec4 v_color;
     varying vec3 v_normal;
-
+    
     varying vec3 v_surfaceToLight;
     varying vec3 v_surfaceToView;
-
+     
     void main() {
         // 使位置和矩阵相乘
-        // gl_Position = u_matrix * a_position;
+        //gl_Position = u_matrix * a_position;
         gl_Position = u_worldViewProjection * a_position;
 
         // 将颜色传递给片断着色器
@@ -42,9 +42,10 @@
         // 重定向法向量并传递给片断着色器
         v_normal = mat3(u_worldInverseTranspose) * a_normal;
 
+        
         // 计算表面的世界坐标
         vec3 surfaceWorldPosition = (u_world * a_position).xyz;
-       
+        
         // 计算表面到光源的方向
         // 传递给片断着色器
         v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
@@ -60,48 +61,44 @@
     precision mediump float;
 
     // 从顶点着色器中传入
-    // varying vec4 v_color;
+    //varying vec4 v_color;
 
     varying vec3 v_normal;
+
     varying vec3 v_surfaceToLight;
     varying vec3 v_surfaceToView;
 
-    //uniform vec3 u_reverseLightDirection;
     uniform vec4 u_color;
+
+    //uniform vec3 u_reverseLightDirection;
     uniform float u_shininess;
     uniform vec3 u_lightDirection;
-    //uniform float u_limit;          // 在点乘空间中
     uniform float u_innerLimit;     // 在点乘空间中
     uniform float u_outerLimit;     // 在点乘空间中
 
     void main() {
-        // 由于 v_normal 是插值出来的，和有可能不是单位向量，
+        // 由于 v_normal 是插值出来的，很有可能不是单位向量，
         // 可以用 normalize 将其单位化。
         vec3 normal = normalize(v_normal);
 
-        gl_FragColor = u_color;
-        //gl_FragColor = v_color;
-      
-        //float light = dot(normal, u_reverseLightDirection);
-        
         vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
         vec3 surfaceToViewDirection = normalize(v_surfaceToView);
         vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
+        //float light = dot(normal, u_reverseLightDirection);
         //float light = dot(normal, surfaceToLightDirection);
-        //float light = 0.0;
-        //float specular = dot(normal, halfVector);
         //float specular = 0.0;
-        //if (light > 0.0) {
-        //  specular = pow(dot(normal, halfVector), u_shininess);
-        //}
+        //        if (light > 0.0) {
+        //        specular = pow(dot(normal, halfVector), u_shininess);
+        //        }
         float dotFromDirection = dot(surfaceToLightDirection, -u_lightDirection);
-        // 如果光线在聚光灯范围内 inLight 就为 1，否则为 0
-        //float inLight = step(u_limit, dotFromDirection);
         float limitRange = u_innerLimit - u_outerLimit;
         float inLight = clamp((dotFromDirection - u_outerLimit) / limitRange, 0.0, 1.0);
         float light = inLight * dot(normal, surfaceToLightDirection);
         float specular = inLight * pow(dot(normal, halfVector), u_shininess);
+
+        //gl_FragColor = v_color;
+        gl_FragColor = u_color;
 
         // 将颜色部分（不包括 alpha）和 光照相乘
         gl_FragColor.rgb *= light;
@@ -113,4 +110,4 @@
 
 <script src="../resources/webgl-utils.js"></script>
 <script src="../resources/webgl-lessons-ui.js"></script>
-<script src="./3d-lighting-spot.js"></script>
+<script src="./lighting-spot.js"></script>

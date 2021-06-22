@@ -28,8 +28,7 @@ function main() {
         gl.getUniformLocation(program, "u_lightWorldPosition");
     var viewWorldPositionLocation =
         gl.getUniformLocation(program, "u_viewWorldPosition");
-    var worldLocation =
-        gl.getUniformLocation(program, "u_world");
+    var worldLocation = gl.getUniformLocation(program, "u_world");
     var shininessLocation = gl.getUniformLocation(program, "u_shininess");
 
     // Create a buffer to put positions in

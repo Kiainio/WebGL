@@ -24,6 +24,9 @@ function main() {
     var lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
     var viewWorldPositionLocation = gl.getUniformLocation(program, "u_viewWorldPosition");
     var shininessLocation = gl.getUniformLocation(program, "u_shininess");
+    var lightDirectionLocation = gl.getUniformLocation(program, "u_lightDirection");
+    var innerLimitLocation = gl.getUniformLocation(program, "u_innerLimit");
+    var outerLimitLocation = gl.getUniformLocation(program, "u_outerLimit");
     var worldLocation = gl.getUniformLocation(program, "u_world");
 
     // Create a buffer to put positions in
@@ -58,6 +61,11 @@ function main() {
 
     var fieldOfViewRadians = degToRad(60);
     var shininess = 150;
+    var lightRotationX = 0;
+    var lightRotationY = 0;
+    var lightDirection = [0, 0, 1];  // this is computed in updateScene
+    var innerLimit = degToRad(10);
+    var outerLimit = degToRad(20);
 
     var cubetranslation = [-350, 0, -100];
     var linetranslation = [-100, 0, -100];
@@ -65,6 +73,32 @@ function main() {
     var spheretranslation = [100, 0, -100];
 
     requestAnimationFrame(drawScene);
+
+    // Setup a ui.
+    webglLessonsUI.setupSlider("#lightRotationX", { value: lightRotationX, slide: updatelightRotationX, min: -2, max: 2, precision: 2, step: 0.001 });
+    webglLessonsUI.setupSlider("#lightRotationY", { value: lightRotationY, slide: updatelightRotationY, min: -2, max: 2, precision: 2, step: 0.001 });
+    webglLessonsUI.setupSlider("#innerLimit", { value: radToDeg(innerLimit), slide: updateInnerLimit, min: 0, max: 180 });
+    webglLessonsUI.setupSlider("#outerLimit", { value: radToDeg(outerLimit), slide: updateOuterLimit, min: 0, max: 180 });
+
+    function updatelightRotationX(event, ui) {
+        lightRotationX = ui.value;
+        drawScene();
+    }
+
+    function updatelightRotationY(event, ui) {
+        lightRotationY = ui.value;
+        drawScene();
+    }
+
+    function updateInnerLimit(event, ui) {
+        innerLimit = degToRad(ui.value);
+        drawScene();
+    }
+
+    function updateOuterLimit(event, ui) {
+        outerLimit = degToRad(ui.value);
+        drawScene();
+    }
 
     // 绘制场景
     function drawScene(time) {
@@ -183,9 +217,24 @@ function main() {
         // 设置光线方向
         // gl.uniform3fv(reverseLightDirectionLocation, m4.normalize([0.5, 0.7, 1]));
         // 设置光源位置
-        gl.uniform3fv(lightWorldPositionLocation, [20, 30, 50]);
+        const lightPosition = [40, 60, 120];
+        gl.uniform3fv(lightWorldPositionLocation, lightPosition);
+
         // 设置亮度
         gl.uniform1f(shininessLocation, shininess);
+
+        {
+            var lmat = m4.lookAt(lightPosition, target, up);
+            lmat = m4.multiply(m4.xRotation(lightRotationX), lmat);
+            lmat = m4.multiply(m4.yRotation(lightRotationY), lmat);
+            // get the zAxis from the matrix
+            // negate it because lookAt looks down the -Z axis
+            lightDirection = [-lmat[8], -lmat[9], -lmat[10]];
+        }
+
+        gl.uniform3fv(lightDirectionLocation, lightDirection);
+        gl.uniform1f(innerLimitLocation, Math.cos(innerLimit));
+        gl.uniform1f(outerLimitLocation, Math.cos(outerLimit));
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
