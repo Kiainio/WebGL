@@ -16,7 +16,7 @@ function main() {
     var positionLocation = gl.getAttribLocation(program, "a_position");
     //var colorLocation = gl.getAttribLocation(program, "a_color");
     var normalLocation = gl.getAttribLocation(program, "a_normal");
-    var texcoordLocation = gl.getAttribLocation(program, "a_texcoords");
+    var texcoordLocation = gl.getAttribLocation(program, "a_texcoord");
     var textureLocation = gl.getUniformLocation(program, "u_texture");
 
     // var matrixLocation = gl.getUniformLocation(program, "u_matrix");
@@ -50,13 +50,8 @@ function main() {
     setNormals(gl);
 
     // 为纹理坐标创建一个缓冲
-    var buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.enableVertexAttribArray(texcoordLocation);
-
-    // 以浮点型格式传递纹理坐标
-    gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
-
+    var texcoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
     // 设置纹理坐标
     setTexcoords(gl);
 
@@ -160,6 +155,11 @@ function main() {
         var offset = 0;        // 从绑定缓冲的起始处开始
         gl.vertexAttribPointer(
             normalLocation, size, type, normalize, stride, offset)
+
+        gl.enableVertexAttribArray(texcoordLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+        // 以浮点型格式传递纹理坐标
+        gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
 
         // 计算投影矩阵
         var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
