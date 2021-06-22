@@ -84,20 +84,23 @@ function main() {
     }
 
     var fieldOfViewRadians = degToRad(60);
-    var fRotationRadians = 0;
+    var modelXRotationRadians = degToRad(0);
+    var modelYRotationRadians = degToRad(0);
 
-    drawScene();
+    var then = 0;
 
-    // Setup a ui.
-    webglLessonsUI.setupSlider("#fRotation", { value: radToDeg(fRotationRadians), slide: updateRotation, min: -360, max: 360 });
+    requestAnimationFrame(drawScene);
 
-    function updateRotation(event, ui) {
-        fRotationRadians = degToRad(ui.value);
-        drawScene();
-    }
 
     // 绘制场景
-    function drawScene() {
+    function drawScene(now) {
+        // Convert to seconds
+        now *= 0.001;
+        // Subtract the previous time from the current time
+        var deltaTime = now - then;
+        // Remember the current time for the next frame.
+        then = now;
+
         webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
         // 告诉WebGL如何从裁剪空间对应到像素
@@ -108,6 +111,10 @@ function main() {
 
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
+
+        // Animate the rotation
+        modelXRotationRadians += 1.2 * deltaTime;
+        modelYRotationRadians += 0.7 * deltaTime;
 
         // 使用我们的程序
         gl.useProgram(program);
@@ -184,7 +191,8 @@ function main() {
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
         // Draw a F at the origin
-        var worldMatrix = m4.yRotation(fRotationRadians);
+        var worldMatrix = m4.xRotation(modelXRotationRadians);
+        worldMatrix = m4.yRotate(worldMatrix, modelYRotationRadians);
 
         // Multiply the matrices.
         var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
