@@ -1,0 +1,68 @@
+<canvas id="canvas" width="400" height="300"></canvas>
+
+<!-- vertex shader -->
+<script id="vertex-shader-3d" type="x-shader/x-vertex">
+    attribute vec4 a_position;
+    //attribute vec4 a_color;
+    attribute vec3 a_normal;
+    attribute vec2 a_texcoord;
+
+    //uniform mat4 u_matrix;
+    uniform mat4 u_worldViewProjection;
+    uniform mat4 u_worldInverseTranspose;
+    //varying vec4 v_color;
+    varying vec3 v_normal;
+    varying vec2 v_texcoord;
+
+    void main() {
+        // 使位置和矩阵相乘
+        // gl_Position = u_matrix * a_position;
+        gl_Position = u_worldViewProjection * a_position;
+
+        // 将颜色传递给片断着色器
+        // v_color = a_color;
+
+        // 将法向量传到片断着色器
+        //v_normal = a_normal;
+
+        // 重定向法向量并传递给片断着色器
+        v_normal = mat3(u_worldInverseTranspose) * a_normal;
+
+        // 传递纹理坐标到片断着色器
+        v_texcoord = a_texcoord;
+    }
+</script>
+
+<!-- fragment shader -->
+<script id="fragment-shader-3d" type="x-shader/x-fragment">
+    precision mediump float;
+
+    // 从顶点着色器中传入
+    // varying vec4 v_color;
+
+    varying vec3 v_normal;
+ 
+    uniform vec3 u_reverseLightDirection;
+    // uniform vec4 u_color;
+    varying vec2 v_texcoord;
+    // 纹理
+    uniform sampler2D u_texture;
+
+    void main() {
+        // 由于 v_normal 是插值出来的，和有可能不是单位向量，
+        // 可以用 normalize 将其单位化。
+        vec3 normal = normalize(v_normal);
+      
+        float light = dot(normal, u_reverseLightDirection);
+      
+        gl_FragColor = texture2D(u_texture, v_texcoord);
+        //gl_FragColor = v_color;
+
+        // 将颜色部分（不包括 alpha）和 光照相乘
+        gl_FragColor.rgb *= light;
+    }
+</script>
+
+<script src="../resources/webgl-utils.js"></script>
+<script src="../resources/webgl-lessons-ui.js"></script>
+<script src="./3d-textures.js"></script>
