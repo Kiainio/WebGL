@@ -66,14 +66,14 @@ function main() {
 
     // 异步加载图像
     var image = new Image();
-    image.crossOrigin = "";
-    image.src = "../resources/f-texture.png";
     image.addEventListener('load', function () {
         // 现在图像加载完成，拷贝到纹理中
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.generateMipmap(gl.TEXTURE_2D);
     });
+    image.crossOrigin = "";
+    image.src = "../resources/f-texture.png";
 
     function radToDeg(r) {
         return r * 180 / Math.PI;
@@ -217,6 +217,8 @@ function main() {
         var offset = 0;
         var count = 16 * 6;
         gl.drawArrays(primitiveType, offset, count);
+
+        requestAnimationFrame(drawScene);
     }
 }
 
