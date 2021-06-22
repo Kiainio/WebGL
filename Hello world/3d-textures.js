@@ -1,4 +1,5 @@
 "use strict";
+"Permissions-Policy: interest-cohort=()";
 
 function main() {
     // Get A WebGL context
@@ -65,6 +66,7 @@ function main() {
 
     // 异步加载图像
     var image = new Image();
+    image.crossOrigin = "";
     image.src = "../resources/f-texture.png";
     image.addEventListener('load', function () {
         // 现在图像加载完成，拷贝到纹理中
