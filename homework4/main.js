@@ -563,9 +563,9 @@ function setGeometry(gl) {
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
-            sphereTexcoordsArray.push(Math.abs(a[0]), Math.abs(a[1]));
-            sphereTexcoordsArray.push(Math.abs(b[0]), Math.abs(b[1]));
-            sphereTexcoordsArray.push(Math.abs(c[0]), Math.abs(c[1]));
+            sphereTexcoordsArray.push(ordered(a[0] / 2 + 0.5, a[1] / 2 + 0.5));
+            sphereTexcoordsArray.push(ordered(b[0] / 2 + 0.5, b[1] / 2 + 0.5));
+            sphereTexcoordsArray.push(ordered(c[0] / 2 + 0.5, c[1] / 2 + 0.5));
             index += 3;
         }
     }
@@ -769,6 +769,13 @@ function setTexcoords(gl) {
             0, 0,
         ).concat(sphereTexcoordsArray)),
         gl.STATIC_DRAW);
+}
+
+function ordered(a, b) {
+    if (a > b) {
+        return b, a;
+    }
+    return a, b;
 }
 
 main();
