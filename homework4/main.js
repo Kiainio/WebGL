@@ -14,7 +14,7 @@ function main() {
 
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(program, "a_position");
-    //var colorLocation = gl.getAttribLocation(program, "a_color");
+    var colorLocation = gl.getAttribLocation(program, "a_color");
     var texcoordLocation = gl.getAttribLocation(program, "a_texcoord");
     var textureLocation = gl.getUniformLocation(program, "u_texture");
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
@@ -28,11 +28,11 @@ function main() {
     // 将几何数据存到缓冲
     setGeometry(gl);
 
-    // // 给颜色创建一个缓冲
-    // var colorBuffer = gl.createBuffer();
-    // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    // // 将颜色值传入缓冲
-    // setColors(gl);
+    // 给颜色创建一个缓冲
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    // 将颜色值传入缓冲
+    setColors(gl);
 
     // 为纹理坐标创建一个缓冲
     var texcoordBuffer = gl.createBuffer();
@@ -45,7 +45,7 @@ function main() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     // 用 1x1 个蓝色像素填充纹理
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE,
         new Uint8Array([0, 0, 255, 255]));
 
     // 异步加载图像
@@ -117,20 +117,20 @@ function main() {
         gl.vertexAttribPointer(
             positionLocation, size, type, normalize, stride, offset)
 
-        // // 启用颜色属性
-        // gl.enableVertexAttribArray(colorLocation);
+        // 启用颜色属性
+        gl.enableVertexAttribArray(colorLocation);
 
-        // // 绑定颜色缓冲
-        // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        // 绑定颜色缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
-        // // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
-        // var size = 3;                 // 每次迭代使用3个单位的数据
-        // var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
-        // var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
-        // var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
-        // var offset = 0;               // 从绑定缓冲的起始处开始
-        // gl.vertexAttribPointer(
-        //     colorLocation, size, type, normalize, stride, offset)
+        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+        var size = 3;                 // 每次迭代使用3个单位的数据
+        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+        var offset = 0;               // 从绑定缓冲的起始处开始
+        gl.vertexAttribPointer(
+            colorLocation, size, type, normalize, stride, offset)
 
         gl.enableVertexAttribArray(texcoordLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
@@ -550,18 +550,22 @@ function setGeometry(gl) {
             spherePointsArray = spherePointsArray.concat(a);
             spherePointsArray = spherePointsArray.concat(b);
             spherePointsArray = spherePointsArray.concat(c);
-            sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
-            sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
-            sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
+            // sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
+            // sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
+            // sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
+            sphereColorsArray.push(0, 0, 0);
+            sphereColorsArray.push(0, 0, 0);
+            sphereColorsArray.push(0, 0, 0);
             var ab = m4.normalize(m4.subtractVectors(b, a));
             var bc = m4.normalize(m4.subtractVectors(c, b));
             var normal = m4.cross(ab, bc);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
-            sphereTexcoordsArray.push(a[0], a[1]);
-            sphereTexcoordsArray.push(b[0], b[1]);
-            sphereTexcoordsArray.push(c[0], c[1]);
+            // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
+            sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
             index += 3;
         }
     }
@@ -708,7 +712,63 @@ function setColors(gl) {
 }
 
 function setTexcoords(gl) {
-    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from(sphereTexcoordsArray), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER,
+        Float32Array.from(new Array(
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+            0, 0,
+        ).concat(sphereTexcoordsArray)),
+        gl.STATIC_DRAW);
 }
 
 main();
