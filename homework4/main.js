@@ -77,29 +77,15 @@ function main() {
     }
 
     const settings = {
-        cameraX: 100,
-        cameraY: 150,
         posX: 100,
         posY: 0,
         posZ: -100,
-        targetX: 0,
-        targetY: 35,
-        targetZ: 0,
-        projWidth: 1,
-        projHeight: 1,
     };
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'cameraX', min: 0, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'cameraY', min: 0, max: 200, change: render, precision: 2, step: 0.001, },
         { type: 'slider', key: 'posX', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
         { type: 'slider', key: 'posY', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
         { type: 'slider', key: 'posZ', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetX', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetY', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetZ', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'projWidth', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'projHeight', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
     ]);
 
     var fieldOfViewRadians = degToRad(60);
@@ -127,7 +113,7 @@ function main() {
         var zFar = 2000;
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        var camera = [settings.cameraX, settings.cameraY, 200];
+        var camera = [100, 150, 200];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
@@ -615,12 +601,12 @@ function setGeometry(gl) {
             spherePointsArray = spherePointsArray.concat(a);
             spherePointsArray = spherePointsArray.concat(b);
             spherePointsArray = spherePointsArray.concat(c);
-            // sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
-            // sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
-            // sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
-            sphereColorsArray.push(0, 0, 0);
-            sphereColorsArray.push(0, 0, 0);
-            sphereColorsArray.push(0, 0, 0);
+            sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
+            sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
+            sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
+            // sphereColorsArray.push(0, 0, 0);
+            // sphereColorsArray.push(0, 0, 0);
+            // sphereColorsArray.push(0, 0, 0);
             var ab = m4.normalize(m4.subtractVectors(b, a));
             var bc = m4.normalize(m4.subtractVectors(c, b));
             var normal = m4.cross(ab, bc);
