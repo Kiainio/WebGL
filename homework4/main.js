@@ -14,7 +14,7 @@ function main() {
 
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(textureProgram, "a_position");
-    //var colorLocation = gl.getAttribLocation(program, "a_color");
+    var colorLocation = gl.getAttribLocation(textureProgram, "a_color");
     var texcoordLocation = gl.getAttribLocation(textureProgram, "a_texcoord");
     var textureLocation = gl.getUniformLocation(textureProgram, "u_texture");
     //var matrixLocation = gl.getUniformLocation(textureProgram, "u_matrix");
@@ -33,11 +33,11 @@ function main() {
     // 将几何数据存到缓冲
     setGeometry(gl);
 
-    // // 给颜色创建一个缓冲
-    // var colorBuffer = gl.createBuffer();
-    // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    // // 将颜色值传入缓冲
-    // setColors(gl);
+    // 给颜色创建一个缓冲
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    // 将颜色值传入缓冲
+    setColors(gl);
 
     // 为纹理坐标创建一个缓冲
     var texcoordBuffer = gl.createBuffer();
@@ -77,27 +77,27 @@ function main() {
     }
 
     const settings = {
-        cameraX: 2.75,
-        cameraY: 5,
-        posX: 3.5,
-        posY: 4.4,
-        posZ: 4.7,
-        targetX: 0.8,
-        targetY: 0,
-        targetZ: 4.7,
+        cameraX: 100,
+        cameraY: 150,
+        posX: 100,
+        posY: 0,
+        posZ: -100,
+        targetX: 0,
+        targetY: 35,
+        targetZ: 0,
         projWidth: 1,
         projHeight: 1,
     };
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'cameraX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'cameraY', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posY', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posZ', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetY', min: 0, max: 20, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'targetZ', min: -10, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'cameraX', min: 0, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'cameraY', min: 0, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posX', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posY', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posZ', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetX', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetY', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetZ', min: -50, max: 50, change: render, precision: 2, step: 0.001, },
         { type: 'slider', key: 'projWidth', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
         { type: 'slider', key: 'projHeight', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
     ]);
@@ -107,7 +107,7 @@ function main() {
     var cubetranslation = [-350, 0, -100];
     var linetranslation = [-100, 0, -100];
     var fivetranslation = [-100, 0, -100];
-    var spheretranslation = [2, 3, 4];
+    var spheretranslation = [100, 0, -100];
 
     function render(time) {
         webglUtils.resizeCanvasToDisplaySize(gl.canvas);
@@ -127,7 +127,7 @@ function main() {
         var zFar = 2000;
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        var camera = [settings.cameraX, settings.cameraY, 7];
+        var camera = [settings.cameraX, settings.cameraY, 200];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
@@ -167,20 +167,20 @@ function main() {
         gl.vertexAttribPointer(
             positionLocation, size, type, normalize, stride, offset)
 
-        // // 启用颜色属性
-        // gl.enableVertexAttribArray(colorLocation);
+        // 启用颜色属性
+        gl.enableVertexAttribArray(colorLocation);
 
-        // // 绑定颜色缓冲
-        // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        // 绑定颜色缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
-        // // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
-        // var size = 3;                 // 每次迭代使用3个单位的数据
-        // var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
-        // var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
-        // var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
-        // var offset = 0;               // 从绑定缓冲的起始处开始
-        // gl.vertexAttribPointer(
-        //     colorLocation, size, type, normalize, stride, offset)
+        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+        var size = 3;                 // 每次迭代使用3个单位的数据
+        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+        var offset = 0;               // 从绑定缓冲的起始处开始
+        gl.vertexAttribPointer(
+            colorLocation, size, type, normalize, stride, offset)
 
         gl.enableVertexAttribArray(texcoordLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
