@@ -46,7 +46,7 @@ function main() {
 
     // 用 1x1 个黑像素填充纹理
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-        new Uint8Array([0, 0, 0, 255]));
+        new Uint8Array([0, 0, 0, 0]));
 
     // 异步加载图像
     var image = new Image();
