@@ -132,11 +132,6 @@ function main() {
         gl.vertexAttribPointer(
             colorLocation, size, type, normalize, stride, offset)
 
-        gl.enableVertexAttribArray(texcoordLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-        // 以浮点型格式传递纹理坐标
-        gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
-
         // 计算矩阵
         var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
         var zNear = 1;
@@ -199,6 +194,11 @@ function main() {
         // ---绘制五角星--- END
 
         // ---绘制球体--- BEGIN
+        gl.enableVertexAttribArray(texcoordLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+        // 以浮点型格式传递纹理坐标
+        gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
+
         var matrix = m4.translate(viewProjectionMatrix, spheretranslation[0], spheretranslation[1], spheretranslation[2]);
         matrix = m4.xRotate(matrix, sphererotation[0]);
         matrix = m4.yRotate(matrix, sphererotation[1]);
@@ -728,61 +728,7 @@ function setColors(gl) {
 
 function setTexcoords(gl) {
     gl.bufferData(gl.ARRAY_BUFFER,
-        Float32Array.from(new Array(
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-        ).concat(sphereTexcoordsArray)),
+        Float32Array.from(sphereTexcoordsArray),
         gl.STATIC_DRAW);
 }
 
