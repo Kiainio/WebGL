@@ -41,10 +41,10 @@ function main() {
     setTexcoords(gl);
 
     // 创建一个纹理
-    var texture = gl.createTexture();
+    const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    // 用 1x1 个黑像素填充纹理
+    // 用 1x1 个蓝色像素填充纹理
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
         new Uint8Array([0, 0, 0, 0]));
 
