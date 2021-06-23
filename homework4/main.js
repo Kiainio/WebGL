@@ -708,7 +708,7 @@ function setColors(gl) {
 }
 
 function setTexcoords(gl) {
-    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from(setTexcoords), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, Float32Array.from(sphereTexcoordsArray), gl.STATIC_DRAW);
 }
 
 main();
