@@ -9,6 +9,11 @@ function main() {
         return;
     }
 
+    const ext = gl.getExtension('WEBGL_depth_texture');
+    if (!ext) {
+        return;
+    }
+
     // setup GLSL program
     var textureProgram = webglUtils.createProgramFromScripts(gl, ["vertex-shader-3d", "fragment-shader-3d"]);
 
@@ -44,6 +49,60 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
     // 设置纹理坐标
     setTexcoords(gl);
+
+    const depthTexture = gl.createTexture();
+    const depthTextureSize = 512;
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,      // target
+        0,                  // mip level
+        gl.DEPTH_COMPONENT, // internal format
+        depthTextureSize,   // width
+        depthTextureSize,   // height
+        0,                  // border
+        gl.DEPTH_COMPONENT, // format
+        gl.UNSIGNED_INT,    // type
+        null);              // data
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    const depthFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,       // target
+        gl.DEPTH_ATTACHMENT,  // attachment point
+        gl.TEXTURE_2D,        // texture target
+        depthTexture,         // texture
+        0);                   // mip level
+
+    // 创建一个和深度纹理相同尺寸的颜色纹理
+    const unusedTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        depthTextureSize,
+        depthTextureSize,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null,
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // 把它附加到该帧缓冲上
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,        // target
+        gl.COLOR_ATTACHMENT0,  // attachment point
+        gl.TEXTURE_2D,         // texture target
+        unusedTexture,         // texture
+        0);                    // mip level
 
     function loadImageTexture(url) {
         // 创建一个纹理
@@ -83,9 +142,9 @@ function main() {
     };
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'posX', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posY', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posZ', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posX', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posY', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posZ', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
     ]);
 
     var fieldOfViewRadians = degToRad(60);
@@ -118,14 +177,14 @@ function main() {
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
 
-        drawScene(projectionMatrix, cameraMatrix, time);
+        drawScene(projectionMatrix, cameraMatrix, textureProgram, time);
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
 
     // 绘制场景
-    function drawScene(projectionMatrix, cameraMatrix, time) {
+    function drawScene(projectionMatrix, cameraMatrix, program, time) {
         time *= 0.0005;
 
         //var cuberotation = [-time, time, 0];
@@ -136,7 +195,7 @@ function main() {
 
         // ---绘制立方体--- BEGIN
         // 使用我们的程序
-        gl.useProgram(textureProgram);
+        gl.useProgram(program);
 
         // 启用属性
         gl.enableVertexAttribArray(positionLocation);
@@ -611,24 +670,9 @@ function setGeometry(gl) {
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
-            if (a[2] > 0) {
-                sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
-            }
-            else {
-                sphereTexcoordsArray.push(a[1] / 2 + 0.5, a[0] / 2 + 0.5);
-            }
-            if (b[2] > 0) {
-                sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
-            }
-            else {
-                sphereTexcoordsArray.push(b[1] / 2 + 0.5, b[0] / 2 + 0.5);
-            }
-            if (c[2] > 0) {
-                sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
-            }
-            else {
-                sphereTexcoordsArray.push(c[1] / 2 + 0.5, c[0] / 2 + 0.5);
-            }
+            sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
             index += 3;
         }
     }
