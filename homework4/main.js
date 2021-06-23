@@ -107,7 +107,7 @@ function main() {
     var cubetranslation = [-350, 0, -100];
     var linetranslation = [-100, 0, -100];
     var fivetranslation = [-100, 0, -100];
-    var spheretranslation = [100, 0, -100];
+    var spheretranslation = [2, 3, 4];
 
     function render(time) {
         webglUtils.resizeCanvasToDisplaySize(gl.canvas);
