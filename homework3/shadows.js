@@ -16,7 +16,7 @@ function main() {
 
     // setup GLSL program
     const textureProgram = webglUtils.createProgramFromScripts(gl, ["vertex-shader-3d", "fragment-shader-3d"]);
-    const colorProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
+    const colorProgram = webglUtils.createProgramFromScripts(gl, ["color-vertex-shader", "color-fragment-shader"]);
 
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(textureProgram, "a_position");
@@ -29,6 +29,13 @@ function main() {
     var projectionLocation = gl.getUniformLocation(textureProgram, "u_projection");
     var textureMatrixLocation = gl.getUniformLocation(textureProgram, "u_textureMatrix");
     var projectedTextureLocation = gl.getUniformLocation(textureProgram, "u_projectedTexture");
+
+    var CpositionLocation = gl.getAttribLocation(colorProgram, "a_position");
+    var CcolorLocation = gl.getAttribLocation(colorProgram, "a_color");
+    var CprojectionLocation = gl.getUniformLocation(colorProgram, "u_projection");
+    var CviewLocation = gl.getUniformLocation(colorProgram, "u_view");
+    var CworldLocation = gl.getUniformLocation(colorProgram, "u_world");
+
 
     // Create a buffer to put positions in
     var positionBuffer = gl.createBuffer();
@@ -287,7 +294,6 @@ function main() {
         gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
         gl.uniformMatrix4fv(projectionLocation, false, depth);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
         gl.uniform1i(projectedTextureLocation, 0);
 
         // 绘制几何体
@@ -334,19 +340,18 @@ function main() {
 
         // ---绘制平面--- BEGIN
         // 计算矩阵
-        var worldMatrix = m4.translation(linetranslation[0], linetranslation[1], linetranslation[2]);
-        worldMatrix = m4.yRotate(worldMatrix, linerotation[1]);
+        var worldMatrix = m4.translation(0, 0, 0);
 
         gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
         gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform1i(projectedTextureLocation, 0);
 
         // 绘制几何体
-        var primitiveType = gl.LINE_LOOP;
-        var offset = 6 * 6;
-        var count = 5;
+        var primitiveType = gl.TRIANGLES;
+        var offset = 6 * 6 + 10;
+        var count = 6;
         gl.drawArrays(primitiveType, offset, count);
         // ---绘制平面--- END
 
@@ -366,7 +371,7 @@ function main() {
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
-        var offset = 6 * 6 + 10;
+        var offset = 6 * 6 + 10 + 6;
         var count = index;
         gl.drawArrays(primitiveType, offset, count);
         // ---绘制球体--- END
@@ -860,6 +865,13 @@ function setColors(gl) {
             255, 255, 0,
             255, 255, 0,
             255, 255, 0,
+
+            128, 128, 128,
+            128, 128, 128,
+            128, 128, 128,
+            128, 128, 128,
+            128, 128, 128,
+            128, 128, 128,
         )).concat(sphereColorsArray)),
         gl.STATIC_DRAW);
 }

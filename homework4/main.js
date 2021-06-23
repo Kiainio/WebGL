@@ -76,18 +76,6 @@ function main() {
         return d * Math.PI / 180;
     }
 
-    const settings = {
-        posX: 100,
-        posY: 0,
-        posZ: -100,
-    };
-
-    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'posX', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posY', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posZ', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
-    ]);
-
     var fieldOfViewRadians = degToRad(60);
 
     var cubetranslation = [-350, 0, -100];
@@ -183,7 +171,7 @@ function main() {
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
         let textureWorldMatrix = m4.lookAt(
-            [settings.posX, settings.posY, settings.posZ],          // position
+            [192, -115, -127],          // position
             [0, 35, 0], // target
             [0, 1, 0],                                              // up
         );
