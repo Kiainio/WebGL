@@ -563,19 +563,19 @@ function setGeometry(gl) {
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
-            if (a[0] < a[1]) {
+            if (a[2] > 0) {
                 sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
             }
             else {
                 sphereTexcoordsArray.push(a[1] / 2 + 0.5, a[0] / 2 + 0.5);
             }
-            if (b[0] < b[1]) {
+            if (b[2] > 0) {
                 sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
             }
             else {
                 sphereTexcoordsArray.push(b[1] / 2 + 0.5, b[0] / 2 + 0.5);
             }
-            if (c[0] < c[1]) {
+            if (c[2] > 0) {
                 sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
             }
             else {
