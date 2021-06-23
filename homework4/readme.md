@@ -1,22 +1,18 @@
-# homework3
+# homework4
 
 ## 01 内容要求
 
-> 利用递归细分绘制一个三维球面（参考教材）
->
 > 将五角星、立方体和球体的中心沿某条线排列
 >
-> 三个对象都放置到视景体中可见
+> 将学号和姓名制作成一张贴图图片
 >
-> 投影方式设置为透视投影
+> 将该图片作为纹理映射到某个物体上
 >
-> 开启光照，体会不同光照和材质设置带来的效果变化
->
-> 至少绘制出一个物体的阴影效果
+> 立方体上设置环境贴图，反射出五角星的形状
 
 ## 02 实现方法
 
-### 1. 三维球面
+### 1. 纹理映射
 
 ```javascript
 var va = [0, 0, -1];
@@ -60,13 +56,13 @@ function devideTriangle(a, b, c, count) {
 
 相比于球面，线框效果较明显，展示时使用线框绘制结果。根据细分程度不同，有：
 
-![](./tetrahedron3.png)
+![](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron3.png)
 
-![](./tetrahedron4.png)
+![](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron4.png)
 
-![tetrahedron5](./tetrahedron5.png)
+![tetrahedron5](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron5.png)
 
-![tetrahedron6](./tetrahedron6.png)
+![tetrahedron6](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron6.png)
 
 当细分度为6时，顶点数达49152，有较明显的计算时间。
 
@@ -90,7 +86,7 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 将物体放到视图范围内，对立方体、五角星和球体进行适当平移。
 
-![perspective](./perspective.png)
+![perspective](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\perspective.png)
 
 可明显观察到“近大远小”的透视效果。
 
@@ -98,9 +94,11 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 #### 1）方向光源
 
-给物体设置法向量，其中球体的法向量用三点的坐标叉乘得到。同时，在物体重定向时重定向法向量，使面朝相机的一面被照亮。
+给物体设置法向量，其中球体的法向量用三点的坐标叉乘得到。为方便观察效果，将立方体及球体更改为单色。
 
-![方向光源](./lighting-directional.png)
+同时，在物体重定向时重定向法向量，使面朝相机的一面被照亮。
+
+![方向光源](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-directional.png)
 
 #### 2）点光源
 
@@ -108,13 +106,13 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 同时，加上镜面高光，当方向一致时，光线反射。
 
-![点光源](./lighting-point.png)
+![点光源](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-point.png)
 
 #### 4）聚光灯
 
 在点光源的基础上，设置限定范围，当光线不在限定范围时不照亮。使用内部限定和外部限定两个限定值，两者之间使用插值。
 
-![lighting-spot](./lighting-spot.png)
+![lighting-spot](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-spot.png)
 
 ### 4. 阴影
 
@@ -122,11 +120,5 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 ## 03 效果展示
 
-[透视投影]: ./main.html
 [方向光源]: ./lighting-directional.html
-[点光源]: ./lighting-point.html
-[聚光灯]:./lighting-spot.html
-[github-透视投影]: https://kiainio.github.io/WebGL/homework3/main.html
-[github-方向光源]:https://kiainio.github.io/WebGL/homework3/lighting-directional.html
-[github-点光源]:https://kiainio.github.io/WebGL/homework3/lighting-point.html
-[github-聚光灯]:https://kiainio.github.io/WebGL/homework3/lighting-spot.html
+[github]: https://kiainio.github.io/WebGL/homework3/lighting-directional.html

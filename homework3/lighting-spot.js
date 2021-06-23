@@ -14,10 +14,10 @@ function main() {
 
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(program, "a_position");
-    //var colorLocation = gl.getAttribLocation(program, "a_color");
+    var colorLocation = gl.getAttribLocation(program, "a_color");
     var normalLocation = gl.getAttribLocation(program, "a_normal");
     //var matrixLocation = gl.getUniformLocation(program, "u_matrix");
-    var colorLocation = gl.getUniformLocation(program, "u_color");
+    // var colorLocation = gl.getUniformLocation(program, "u_color");
     //var reverseLightDirectionLocation = gl.getUniformLocation(program, "u_reverseLightDirection");
     var worldViewProjectionLocation = gl.getUniformLocation(program, "u_worldViewProjection");
     var worldInverseTransposeLocation = gl.getUniformLocation(program, "u_worldInverseTranspose");
@@ -38,11 +38,11 @@ function main() {
     // 将几何数据存到缓冲
     setGeometry(gl);
 
-    // // 给颜色创建一个缓冲
-    // var colorBuffer = gl.createBuffer();
-    // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    // // 将颜色值传入缓冲
-    // setColors(gl);
+    // 给颜色创建一个缓冲
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    // 将颜色值传入缓冲
+    setColors(gl);
 
     // 创建缓冲存储法向量
     var normalBuffer = gl.createBuffer();
@@ -141,20 +141,20 @@ function main() {
         gl.vertexAttribPointer(
             positionLocation, size, type, normalize, stride, offset)
 
-        // // 启用颜色属性
-        // gl.enableVertexAttribArray(colorLocation);
+        // 启用颜色属性
+        gl.enableVertexAttribArray(colorLocation);
 
-        // // 绑定颜色缓冲
-        // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        // 绑定颜色缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
-        // // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
-        // var size = 3;                 // 每次迭代使用3个单位的数据
-        // var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
-        // var normalize = false;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
-        // var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
-        // var offset = 0;               // 从绑定缓冲的起始处开始
-        // gl.vertexAttribPointer(
-        //     colorLocation, size, type, normalize, stride, offset)
+        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+        var size = 3;                 // 每次迭代使用3个单位的数据
+        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+        var offset = 0;               // 从绑定缓冲的起始处开始
+        gl.vertexAttribPointer(
+            colorLocation, size, type, normalize, stride, offset)
 
         // 启用法向量属性
         gl.enableVertexAttribArray(normalLocation);
@@ -212,7 +212,7 @@ function main() {
             worldInverseTransposeMatrix);
         //gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
-        gl.uniform4fv(colorLocation, [1, 0, 0, 1]);
+        // gl.uniform4fv(colorLocation, [1, 0, 0, 1]);
 
         // 设置光线方向
         // gl.uniform3fv(reverseLightDirectionLocation, m4.normalize([0.5, 0.7, 1]));
@@ -259,7 +259,7 @@ function main() {
             worldInverseTransposeMatrix);
         //gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
-        gl.uniform4fv(colorLocation, [0, 1, 0, 1]);
+        // gl.uniform4fv(colorLocation, [0, 1, 0, 1]);
 
         // 绘制几何体
         var primitiveType = gl.LINE_LOOP;
@@ -281,7 +281,7 @@ function main() {
         gl.uniformMatrix4fv(
             worldInverseTransposeLocation, false,
             worldInverseTransposeMatrix);
-        gl.uniform4fv(colorLocation, [1, 1, 0, 1]);
+        // gl.uniform4fv(colorLocation, [1, 1, 0, 1]);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLE_FAN;
@@ -306,7 +306,7 @@ function main() {
         gl.uniformMatrix4fv(
             worldInverseTransposeLocation, false,
             worldInverseTransposeMatrix);
-        gl.uniform4fv(colorLocation, [0, 0, 1, 1]);
+        // gl.uniform4fv(colorLocation, [0, 0, 1, 1]);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;

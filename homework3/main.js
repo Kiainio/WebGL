@@ -15,16 +15,7 @@ function main() {
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(program, "a_position");
     var colorLocation = gl.getAttribLocation(program, "a_color");
-    var normalLocation = gl.getAttribLocation(program, "a_normal");
-    //var matrixLocation = gl.getUniformLocation(program, "u_matrix");
-    // var colorLocation = gl.getUniformLocation(program, "u_color");
-    //var reverseLightDirectionLocation = gl.getUniformLocation(program, "u_reverseLightDirection");
-    var worldViewProjectionLocation = gl.getUniformLocation(program, "u_worldViewProjection");
-    var worldInverseTransposeLocation = gl.getUniformLocation(program, "u_worldInverseTranspose");
-    var lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
-    var viewWorldPositionLocation = gl.getUniformLocation(program, "u_viewWorldPosition");
-    var shininessLocation = gl.getUniformLocation(program, "u_shininess");
-    var worldLocation = gl.getUniformLocation(program, "u_world");
+    var matrixLocation = gl.getUniformLocation(program, "u_matrix");
 
     // Create a buffer to put positions in
     var positionBuffer = gl.createBuffer();
@@ -41,13 +32,6 @@ function main() {
     // 将颜色值传入缓冲
     setColors(gl);
 
-    // 创建缓冲存储法向量
-    var normalBuffer = gl.createBuffer();
-    // 绑定到 ARRAY_BUFFER (可以看作 ARRAY_BUFFER = normalBuffer)
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    // 将法向量存入缓冲
-    setNormals(gl);
-
     function radToDeg(r) {
         return r * 180 / Math.PI;
     }
@@ -57,7 +41,6 @@ function main() {
     }
 
     var fieldOfViewRadians = degToRad(60);
-    var shininess = 150;
 
     var cubetranslation = [-350, 0, -100];
     var linetranslation = [-100, 0, -100];
@@ -82,7 +65,7 @@ function main() {
         gl.enable(gl.DEPTH_TEST);
 
         //var cuberotation = [-time, time, 0];
-        var cuberotation = [degToRad(60), time, degToRad(60)];
+        var cuberotation = [-time, time, -time];
         var linerotation = [0, time, 0];
         var fiverotation = [0, time, 0];
         var sphererotation = [-time, time, -time];
@@ -122,21 +105,6 @@ function main() {
         gl.vertexAttribPointer(
             colorLocation, size, type, normalize, stride, offset)
 
-        // 启用法向量属性
-        gl.enableVertexAttribArray(normalLocation);
-
-        // 绑定法向量缓冲
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-
-        // 告诉法向量属性怎么从 normalBuffer (ARRAY_BUFFER) 中读取值
-        var size = 3;          // 每次迭代使用3个单位的数据
-        var type = gl.FLOAT;   // 单位数据类型是 32 位浮点型
-        var normalize = false; // 单位化 (从 0-255 转换到 0-1)
-        var stride = 0;        // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
-        var offset = 0;        // 从绑定缓冲的起始处开始
-        gl.vertexAttribPointer(
-            normalLocation, size, type, normalize, stride, offset)
-
         // 计算矩阵
         var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
         var zNear = 1;
@@ -144,14 +112,11 @@ function main() {
         // 创建一个矩阵，可以将原点移动到立方体的中心
         var moveOriginMatrix = m4.translation(-50, -50, -50);
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
-
+        
         var camera = [100, 150, 200];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
-
-        // 设置相机位置
-        gl.uniform3fv(viewWorldPositionLocation, camera);
 
         // Make a view matrix from the camera matrix.
         var viewMatrix = m4.inverse(cameraMatrix);
@@ -159,58 +124,27 @@ function main() {
         // Compute a view projection matrix
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-        var worldMatrix = m4.translation(cubetranslation[0], cubetranslation[1], cubetranslation[2]);
-        worldMatrix = m4.xRotate(worldMatrix, cuberotation[0]);
-        worldMatrix = m4.yRotate(worldMatrix, cuberotation[1]);
-        worldMatrix = m4.zRotate(worldMatrix, cuberotation[2]);
-        worldMatrix = m4.multiply(worldMatrix, moveOriginMatrix);
-        var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
-        var worldInverseMatrix = m4.inverse(worldMatrix);
-        var worldInverseTransposeMatrix = m4.transpose(worldInverseMatrix);
+        var matrix = m4.translate(viewProjectionMatrix, cubetranslation[0], cubetranslation[1], cubetranslation[2]);
+        matrix = m4.xRotate(matrix, cuberotation[0]);
+        matrix = m4.yRotate(matrix, cuberotation[1]);
+        matrix = m4.zRotate(matrix, cuberotation[2]);
+        matrix = m4.multiply(matrix, moveOriginMatrix);
 
         // 设置矩阵
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(
-            worldViewProjectionLocation, false,
-            worldViewProjectionMatrix);
-        gl.uniformMatrix4fv(
-            worldInverseTransposeLocation, false,
-            worldInverseTransposeMatrix);
-        //gl.uniformMatrix4fv(matrixLocation, false, matrix);
-
-        // gl.uniform4fv(colorLocation, [1, 0, 0, 1]);
-
-        // 设置光线方向
-        // gl.uniform3fv(reverseLightDirectionLocation, m4.normalize([0.5, 0.7, 1]));
-        // 设置光源位置
-        gl.uniform3fv(lightWorldPositionLocation, [20, 30, 50]);
-        // 设置亮度
-        gl.uniform1f(shininessLocation, shininess);
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
         var offset = 0;
-        var count = 6 * 6;
+        var count = 6*6;
         gl.drawArrays(primitiveType, offset, count);
         // ---绘制立方体--- END
 
         // ---绘制五角星--- BEGIN
         // 计算矩阵
-        var worldMatrix = m4.translation(linetranslation[0], linetranslation[1], linetranslation[2]);
-        worldMatrix = m4.yRotate(worldMatrix, linerotation[1]);
-        var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
-        var worldInverseMatrix = m4.inverse(worldMatrix);
-        var worldInverseTransposeMatrix = m4.transpose(worldInverseMatrix);
-
-        // 设置矩阵
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
-        gl.uniformMatrix4fv(
-            worldInverseTransposeLocation, false,
-            worldInverseTransposeMatrix);
-        //gl.uniformMatrix4fv(matrixLocation, false, matrix);
-
-        // gl.uniform4fv(colorLocation, [0, 1, 0, 1]);
+        var matrix = m4.translate(viewProjectionMatrix, linetranslation[0], linetranslation[1], linetranslation[2]);
+        matrix = m4.yRotate(matrix, linerotation[1]);
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
         // 绘制几何体
         var primitiveType = gl.LINE_LOOP;
@@ -219,20 +153,11 @@ function main() {
         gl.drawArrays(primitiveType, offset, count);
 
         // 计算矩阵
-        var worldMatrix = m4.translation(fivetranslation[0], fivetranslation[1], fivetranslation[2]);
-        worldMatrix = m4.yRotate(worldMatrix, fiverotation[1]);
-        var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
-        var worldInverseMatrix = m4.inverse(worldMatrix);
-        var worldInverseTransposeMatrix = m4.transpose(worldInverseMatrix);
+        var matrix = m4.translate(viewProjectionMatrix, fivetranslation[0], fivetranslation[1], fivetranslation[2]);
+        matrix = m4.yRotate(matrix, fiverotation[1]);
 
         // 设置矩阵
-        //gl.uniformMatrix4fv(matrixLocation, false, matrix);
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
-        gl.uniformMatrix4fv(
-            worldInverseTransposeLocation, false,
-            worldInverseTransposeMatrix);
-        // gl.uniform4fv(colorLocation, [1, 1, 0, 1]);
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLE_FAN;
@@ -242,22 +167,14 @@ function main() {
         // ---绘制五角星--- END
 
         // ---绘制球体--- BEGIN
-        var worldMatrix = m4.translation(spheretranslation[0], spheretranslation[1], spheretranslation[2]);
-        worldMatrix = m4.xRotate(worldMatrix, sphererotation[0]);
-        worldMatrix = m4.yRotate(worldMatrix, sphererotation[1]);
-        worldMatrix = m4.zRotate(worldMatrix, sphererotation[2]);
-        worldMatrix = m4.scale(worldMatrix, 80, 80, 80);
-        var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
-        var worldInverseMatrix = m4.inverse(worldMatrix);
-        var worldInverseTransposeMatrix = m4.transpose(worldInverseMatrix);
+        var matrix = m4.translate(viewProjectionMatrix, spheretranslation[0], spheretranslation[1], spheretranslation[2]);
+        matrix = m4.xRotate(matrix, sphererotation[0]);
+        matrix = m4.yRotate(matrix, sphererotation[1]);
+        matrix = m4.zRotate(matrix, sphererotation[2]);
+        matrix = m4.scale(matrix, 80, 80, 80);
 
         // 设置矩阵
-        //gl.uniformMatrix4fv(matrixLocation, false, matrix);
-        gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
-        gl.uniformMatrix4fv(
-            worldInverseTransposeLocation, false,
-            worldInverseTransposeMatrix);
-        // gl.uniform4fv(colorLocation, [0, 0, 1, 1]);
+        gl.uniformMatrix4fv(matrixLocation, false, matrix);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
@@ -749,108 +666,6 @@ function setColors(gl) {
             255, 255, 0,
             255, 255, 0,
         )).concat(sphereColorsArray)),
-        gl.STATIC_DRAW);
-}
-
-function setNormals(gl) {
-    gl.bufferData(gl.ARRAY_BUFFER,
-        Float32Array.from(new Array(
-            // // 正面
-            // 0, 0, 1,
-            // 0, 0, 1,
-            // 0, 0, 1,
-            // 0, 0, 1,
-            // 0, 0, 1,
-            // 0, 0, 1,
-            // 正面
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
-
-            // // 背面
-            // 0, 0, -1,
-            // 0, 0, -1,
-            // 0, 0, -1,
-            // 0, 0, -1,
-            // 0, 0, -1,
-            // 0, 0, -1,
-            // 背面
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-
-            // 顶部
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
-            // // 顶部
-            // 0, 1, 0,
-            // 0, 1, 0,
-            // 0, 1, 0,
-            // 0, 1, 0,
-            // 0, 1, 0,
-            // 0, 1, 0,
-
-            // 右面
-            1, 0, 0,
-            1, 0, 0,
-            1, 0, 0,
-            1, 0, 0,
-            1, 0, 0,
-            1, 0, 0,
-
-            // // 底面
-            // 0, -1, 0,
-            // 0, -1, 0,
-            // 0, -1, 0,
-            // 0, -1, 0,
-            // 0, -1, 0,
-            // 0, -1, 0,
-            // 底面
-            0, 1, 0,
-            0, 1, 0,
-            0, 1, 0,
-            0, 1, 0,
-            0, 1, 0,
-            0, 1, 0,
-
-            // // 左面
-            // 1, 0, 0,
-            // 1, 0, 0,
-            // 1, 0, 0,
-            // 1, 0, 0,
-            // 1, 0, 0,
-            // 1, 0, 0,
-            // 左面
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
-
-            // 线框
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-
-            // 五边形
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1,
-            0, 0, 1).concat(sphereNormalsArray)),
         gl.STATIC_DRAW);
 }
 
