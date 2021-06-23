@@ -187,6 +187,7 @@ function main() {
             [0, 35, 0], // target
             [0, 1, 0],                                              // up
         );
+        textureWorldMatrix = m4.scale(textureWorldMatrix, 100, 100, 100);
 
         const textureMatrix = m4.inverse(textureWorldMatrix);
 
