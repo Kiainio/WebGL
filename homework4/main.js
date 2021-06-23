@@ -83,9 +83,9 @@ function main() {
     };
 
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'posX', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posY', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posZ', min: -200, max: 200, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posX', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posY', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posZ', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
     ]);
 
     var fieldOfViewRadians = degToRad(60);
