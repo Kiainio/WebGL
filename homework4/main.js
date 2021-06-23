@@ -184,7 +184,7 @@ function main() {
 
         let textureWorldMatrix = m4.lookAt(
             [settings.posX, settings.posY, settings.posZ],          // position
-            [settings.targetX, settings.targetY, settings.targetZ], // target
+            [0, 35, 0], // target
             [0, 1, 0],                                              // up
         );
         textureWorldMatrix = m4.scale(
