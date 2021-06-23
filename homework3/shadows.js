@@ -126,7 +126,7 @@ function main() {
         return texture;
     }
 
-    const imageTexture = loadImageTexture('../resources/id.png');
+    const imageTexture = loadImageTexture('../resources/id_reversed.png');
 
     function radToDeg(r) {
         return r * 180 / Math.PI;
@@ -331,6 +331,24 @@ function main() {
         var count = 5;
         gl.drawArrays(primitiveType, offset, count);
         // ---绘制五角星--- END
+
+        // ---绘制平面--- BEGIN
+        // 计算矩阵
+        var worldMatrix = m4.translation(linetranslation[0], linetranslation[1], linetranslation[2]);
+        worldMatrix = m4.yRotate(worldMatrix, linerotation[1]);
+
+        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
+        //gl.uniform1i(projectedTextureLocation, 0);
+
+        // 绘制几何体
+        var primitiveType = gl.LINE_LOOP;
+        var offset = 6 * 6;
+        var count = 5;
+        gl.drawArrays(primitiveType, offset, count);
+        // ---绘制平面--- END
 
         // ---绘制球体--- BEGIN
         var worldMatrix = m4.translation(spheretranslation[0], spheretranslation[1], spheretranslation[2]);
@@ -766,7 +784,14 @@ function setGeometry(gl) {
             100 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0,
             100 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
             100 * -1 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
-            100 * -1 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0)).concat(spherePointsArray)),
+            100 * -1 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0,
+
+            -200, 0, -200,
+            200, 0, 200,
+            200, 0, -200,
+            -200, 0, -200,
+            -200, 0, 200,
+            200, 0, 200)).concat(spherePointsArray)),
         gl.STATIC_DRAW);
 }
 
@@ -843,18 +868,18 @@ function setTexcoords(gl) {
     gl.bufferData(gl.ARRAY_BUFFER,
         Float32Array.from(new Array(
             0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            0, 1,
+            1, 0,
+            0, 1,
+            1, 1,
+            1, 0,
 
             0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            0, 1,
+            1, 0,
+            0, 1,
+            1, 1,
+            1, 0,
 
             0, 0,
             0, 0,
