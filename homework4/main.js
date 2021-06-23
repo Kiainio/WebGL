@@ -76,6 +76,32 @@ function main() {
         return d * Math.PI / 180;
     }
 
+    const settings = {
+        cameraX: 2.75,
+        cameraY: 5,
+        posX: 3.5,
+        posY: 4.4,
+        posZ: 4.7,
+        targetX: 0.8,
+        targetY: 0,
+        targetZ: 4.7,
+        projWidth: 1,
+        projHeight: 1,
+    };
+
+    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
+        { type: 'slider', key: 'cameraX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'cameraY', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posY', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'posZ', min: 1, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetX', min: -10, max: 10, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetY', min: 0, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetZ', min: -10, max: 20, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'projWidth', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'projHeight', min: 0, max: 10, change: render, precision: 2, step: 0.001, },
+    ]);
+
     var fieldOfViewRadians = degToRad(60);
 
     var cubetranslation = [-350, 0, -100];
@@ -101,7 +127,7 @@ function main() {
         var zFar = 2000;
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        var camera = [100, 150, 200];
+        var camera = [settings.cameraX, settings.cameraY, 7];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
@@ -171,10 +197,15 @@ function main() {
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
         let textureWorldMatrix = m4.lookAt(
-            [3.5, 4.4, 4.7],          // position
-            [0.8, 0, 4.7], // target
+            [settings.posX, settings.posY, settings.posZ],          // position
+            [settings.targetX, settings.targetY, settings.targetZ], // target
             [0, 1, 0],                                              // up
         );
+        textureWorldMatrix = m4.scale(
+            textureWorldMatrix,
+            settings.projWidth, settings.projHeight, 1,
+        );
+
         const textureMatrix = m4.inverse(textureWorldMatrix);
 
         var worldMatrix = m4.translation(cubetranslation[0], cubetranslation[1], cubetranslation[2]);
