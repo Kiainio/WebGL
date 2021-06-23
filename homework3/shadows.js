@@ -15,7 +15,8 @@ function main() {
     }
 
     // setup GLSL program
-    var textureProgram = webglUtils.createProgramFromScripts(gl, ["vertex-shader-3d", "fragment-shader-3d"]);
+    const textureProgram = webglUtils.createProgramFromScripts(gl, ["vertex-shader-3d", "fragment-shader-3d"]);
+    const colorProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
 
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(textureProgram, "a_position");
@@ -166,6 +167,31 @@ function main() {
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
+        const lightWorldMatrix = m4.lookAt(
+            [settings.posX, settings.posY, settings.posZ],          // position
+            [settings.targetX, settings.targetY, settings.targetZ], // target
+            [0, 1, 0],                                              // up
+        );
+
+        // 绘制到深度纹理
+        gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+        gl.viewport(0, 0, depthTextureSize, depthTextureSize);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        drawScene(lightProjectionMatrix, lightWorldMatrix, m4.identity(), colorProgram, time);
+
+        // 现在绘制场景到画布，把深度纹理投影到场景内
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        let textureMatrix = m4.identity();
+        textureMatrix = m4.translate(textureMatrix, 0.5, 0.5, 0.5);
+        textureMatrix = m4.scale(textureMatrix, 0.5, 0.5, 0.5);
+        textureMatrix = m4.multiply(textureMatrix, lightProjectionMatrix);
+
+        textureMatrix = m4.multiply(textureMatrix, m4.inverse(lightWorldMatrix));
+
         // 计算矩阵
         var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
         var zNear = 1;
@@ -241,7 +267,7 @@ function main() {
         // Compute a view projection matrix
         var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-        let textureWorldMatrix = m4.lookAt(
+        let lightWorldMatrix = m4.lookAt(
             [settings.posX, settings.posY, settings.posZ],          // position
             [0, 35, 0], // target
             [0, 1, 0],                                              // up
@@ -259,9 +285,10 @@ function main() {
         // 设置矩阵
         gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
         gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+        gl.uniformMatrix4fv(projectionLocation, false, depth);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
         //gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform1i(projectedTextureLocation, 0);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
@@ -317,7 +344,7 @@ function main() {
         gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        gl.uniform1i(projectedTextureLocation, 0);
+        //gl.uniform1i(projectedTextureLocation, 0);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;

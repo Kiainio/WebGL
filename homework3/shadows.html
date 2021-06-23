@@ -59,11 +59,37 @@
             projectedTexcoord.y >= 0.0 &&
             projectedTexcoord.y <= 1.0;
         
-        vec4 projectedTexColor = texture2D(u_projectedTexture, projectedTexcoord.xy);
+        //vec4 projectedTexColor = texture2D(u_projectedTexture, projectedTexcoord.xy);
+        // 'r' 通道内包含深度值
+        vec4 projectedTexColor = vec4(texture2D(u_projectedTexture, projectedTexcoord.xy).rrr, 1);
         
         float projectedAmount = inRange ? 1.0 : 0.0;
         gl_FragColor = mix(v_color, projectedTexColor, projectedAmount);
     }
+</script>
+
+<!-- vertex shader -->
+<script  id="color-vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 a_position;
+    
+    uniform mat4 u_projection;
+    uniform mat4 u_view;
+    uniform mat4 u_world;
+    
+    void main() {
+      // 将 position 乘以矩阵
+      gl_Position = u_projection * u_view * u_world * a_position;
+    }
+</script>
+
+<!-- fragment shader -->
+<script  id="color-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 u_color;
+void main() {
+    gl_FragColor = u_color;
+}
 </script>
 
 <script src="../resources/webgl-utils.js"></script>

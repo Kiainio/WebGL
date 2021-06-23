@@ -611,9 +611,9 @@ function setGeometry(gl) {
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
-            sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
-            sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
-            sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(-a[0] / 2 + 0.5, -a[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(-b[0] / 2 + 0.5, -b[1] / 2 + 0.5);
+            sphereTexcoordsArray.push(-c[0] / 2 + 0.5, -c[1] / 2 + 0.5);
             index += 3;
         }
     }
