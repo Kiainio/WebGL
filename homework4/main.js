@@ -15,7 +15,7 @@ function main() {
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(textureProgram, "a_position");
     var colorLocation = gl.getAttribLocation(textureProgram, "a_color");
-    var texcoordLocation = gl.getAttribLocation(textureProgram, "a_texcoord");
+    var normalLocation = gl.getAttribLocation(textureProgram, "a_normal");
     var textureLocation = gl.getUniformLocation(textureProgram, "u_texture");
     //var matrixLocation = gl.getUniformLocation(textureProgram, "u_matrix");
     var viewLocation = gl.getUniformLocation(textureProgram, "u_view");
@@ -23,6 +23,8 @@ function main() {
     var projectionLocation = gl.getUniformLocation(textureProgram, "u_projection");
     var textureMatrixLocation = gl.getUniformLocation(textureProgram, "u_textureMatrix");
     var projectedTextureLocation = gl.getUniformLocation(textureProgram, "u_projectedTexture");
+    var worldCameraPositionLocation = gl.getUniformLocation(textureProgram, "u_worldCameraPosition");
+    var idLocation = gl.getUniformLocation(textureProgram, "u_id");
 
     // Create a buffer to put positions in
     var positionBuffer = gl.createBuffer();
@@ -39,34 +41,94 @@ function main() {
     // 将颜色值传入缓冲
     setColors(gl);
 
-    // 为纹理坐标创建一个缓冲
-    var texcoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-    // 设置纹理坐标
-    setTexcoords(gl);
+    // 创建缓冲来存法线
+    var normalBuffer = gl.createBuffer();
+    // 绑定它到ARRAY_BUFFER (可视为ARRAY_BUFFER = normalBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    // 将法线数据赋给缓冲
+    setNormals(gl);
 
-    function loadImageTexture(url) {
-        // 创建一个纹理
-        const texture = gl.createTexture();
+    // // 为纹理坐标创建一个缓冲
+    // var texcoordBuffer = gl.createBuffer();
+    // gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+    // // 设置纹理坐标
+    // setTexcoords(gl);
+
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // 用一个 1x1 蓝色像素填充该纹理
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        new Uint8Array([0, 0, 255, 255]));
+    // 异步加载一张图片
+    const image = new Image();
+    image.src = '../resources/id_reversed.png';
+    image.addEventListener('load', function () {
+        // 现在图片加载完了，把它拷贝到纹理中
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        // 用一个 1x1 蓝色像素填充该纹理
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-            new Uint8Array([0, 0, 255, 255]));
-        // 异步加载一张图片
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        // 假设该纹理的宽高是 2 的整次幂
+        gl.generateMipmap(gl.TEXTURE_2D);
+    });
+
+    // 创建纹理。
+    var cubeTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+
+    const faceInfos = [
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            url: '../resources/star.png',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            url: '../resources/board_scaled.png',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            url: '../resources/board_scaled.png',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            url: '../resources/board_scaled.png',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            url: '../resources/board_scaled.png',
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            url: '../resources/board_scaled.png',
+        },
+    ];
+    faceInfos.forEach((faceInfo) => {
+        const { target, url } = faceInfo;
+
+        // 上传画布到立方体贴图的每个面
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 256;
+        const height = 256;
+        const format = gl.RGBA;
+        const type = gl.UNSIGNED_BYTE;
+
+        // 设置每个面，使其立即可渲染
+        gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+
+        // 异步加载图片
         const image = new Image();
         image.src = url;
         image.addEventListener('load', function () {
-            // 现在图片加载完了，把它拷贝到纹理中
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            // 假设该纹理的宽高是 2 的整次幂
-            gl.generateMipmap(gl.TEXTURE_2D);
-            render();
+            // 图片加载完成将其拷贝到纹理
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+            gl.texImage2D(target, level, internalFormat, format, type, image);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
         });
-        return texture;
-    }
-
-    const imageTexture = loadImageTexture('../resources/id_reversed.png');
+    });
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    // gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST);
 
     function radToDeg(r) {
         return r * 180 / Math.PI;
@@ -75,6 +137,17 @@ function main() {
     function degToRad(d) {
         return d * Math.PI / 180;
     }
+
+    const settings = {
+        cameraX: 100,
+        cameraY: 150,
+        cameraZ: 200,
+    };
+    webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
+        { type: 'slider', key: 'cameraX', min: -1000, max: 1000, change: render, precision: 2, step: 1, },
+        { type: 'slider', key: 'cameraY', min: -1000, max: 1000, change: render, precision: 2, step: 1, },
+        { type: 'slider', key: 'cameraZ', min: -1000, max: 1000, change: render, precision: 2, step: 1, },
+    ]);
 
     var fieldOfViewRadians = degToRad(60);
 
@@ -101,19 +174,19 @@ function main() {
         var zFar = 2000;
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        var camera = [100, 150, 200];
+        var camera = [settings.cameraX, settings.cameraY, settings.cameraZ];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
 
-        drawScene(projectionMatrix, cameraMatrix, time);
+        drawScene(projectionMatrix, cameraMatrix, camera, time);
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
 
     // 绘制场景
-    function drawScene(projectionMatrix, cameraMatrix, time) {
+    function drawScene(projectionMatrix, cameraMatrix, cameraPosition, time) {
         time *= 0.0005;
 
         //var cuberotation = [-time, time, 0];
@@ -156,10 +229,20 @@ function main() {
         gl.vertexAttribPointer(
             colorLocation, size, type, normalize, stride, offset)
 
-        gl.enableVertexAttribArray(texcoordLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-        // 以浮点型格式传递纹理坐标
-        gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
+        // 启用法向量属性
+        gl.enableVertexAttribArray(normalLocation);
+
+        // 绑定法向量缓冲
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+        // 告诉属性怎么从normalBuffer (ARRAY_BUFFER)中取出数据
+        var size = 3;          // 每次迭代运行提取三个单位数据
+        var type = gl.FLOAT;   // 数据类型是32位浮点型
+        var normalize = false; // 不归一化数据
+        var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存sizeof(type)
+        var offset = 0;        // 从缓冲起始位置开始读取
+        gl.vertexAttribPointer(
+            normalLocation, size, type, normalize, stride, offset)
 
         // 创建一个矩阵，可以将原点移动到立方体的中心
         var moveOriginMatrix = m4.translation(-50, -50, -50);
@@ -190,7 +273,9 @@ function main() {
         gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform3fv(worldCameraPositionLocation, cameraPosition);
+        gl.uniform1i(textureLocation, 1);
+        gl.uniform1i(idLocation, 0);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
@@ -209,6 +294,7 @@ function main() {
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
         //gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform1i(idLocation, 1);
 
         // 绘制几何体
         var primitiveType = gl.LINE_LOOP;
@@ -226,6 +312,7 @@ function main() {
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
         //gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform1i(idLocation, 1);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLE_FAN;
@@ -247,6 +334,7 @@ function main() {
         gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
         gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
         gl.uniform1i(projectedTextureLocation, 0);
+        gl.uniform1i(idLocation, 2);
 
         // 绘制几何体
         var primitiveType = gl.TRIANGLES;
@@ -741,63 +829,91 @@ function setColors(gl) {
         gl.STATIC_DRAW);
 }
 
-function setTexcoords(gl) {
+function setNormals(gl) {
     gl.bufferData(gl.ARRAY_BUFFER,
-        Float32Array.from(new Array(
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+        new Float32Array([
+            // // 正面
+            // 0, 0, 1,
+            // 0, 0, 1,
+            // 0, 0, 1,
+            // 0, 0, 1,
+            // 0, 0, 1,
+            // 0, 0, 1,
+            // 正面
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // // 背面
+            // 0, 0, -1,
+            // 0, 0, -1,
+            // 0, 0, -1,
+            // 0, 0, -1,
+            // 0, 0, -1,
+            // 0, 0, -1,
+            // 背面
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1,
+            0, 0, 1,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // 顶部
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+            // // 顶部
+            // 0, 1, 0,
+            // 0, 1, 0,
+            // 0, 1, 0,
+            // 0, 1, 0,
+            // 0, 1, 0,
+            // 0, 1, 0,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // 右面
+            1, 0, 0,
+            1, 0, 0,
+            1, 0, 0,
+            1, 0, 0,
+            1, 0, 0,
+            1, 0, 0,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // // 底面
+            // 0, -1, 0,
+            // 0, -1, 0,
+            // 0, -1, 0,
+            // 0, -1, 0,
+            // 0, -1, 0,
+            // 0, -1, 0,
+            // 底面
+            0, 1, 0,
+            0, 1, 0,
+            0, 1, 0,
+            0, 1, 0,
+            0, 1, 0,
+            0, 1, 0,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-        ).concat(sphereTexcoordsArray)),
+            // // 左面
+            // 1, 0, 0,
+            // 1, 0, 0,
+            // 1, 0, 0,
+            // 1, 0, 0,
+            // 1, 0, 0,
+            // 1, 0, 0,
+            // 左面
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0]),
         gl.STATIC_DRAW);
 }
 

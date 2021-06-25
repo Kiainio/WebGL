@@ -18,20 +18,49 @@ function main() {
     const textureProgram = webglUtils.createProgramFromScripts(gl, ["vertex-shader-3d", "fragment-shader-3d"]);
     const colorProgram = webglUtils.createProgramFromScripts(gl, ["color-vertex-shader", "color-fragment-shader"]);
 
+    const colorProgramInfo = webglUtils.createProgramInfo(gl, ['color-vertex-shader', 'color-fragment-shader']);
+    const cubeLinesBufferInfo = webglUtils.createBufferInfoFromArrays(gl, {
+        position: [
+            -1, -1, -1,
+            1, -1, -1,
+            -1, 1, -1,
+            1, 1, -1,
+            -1, -1, 1,
+            1, -1, 1,
+            -1, 1, 1,
+            1, 1, 1,
+        ],
+        indices: [
+            0, 1,
+            1, 3,
+            3, 2,
+            2, 0,
+
+            4, 5,
+            5, 7,
+            7, 6,
+            6, 4,
+
+            0, 4,
+            1, 5,
+            3, 7,
+            2, 6,
+        ],
+    });
+
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(textureProgram, "a_position");
     var colorLocation = gl.getAttribLocation(textureProgram, "a_color");
-    var texcoordLocation = gl.getAttribLocation(textureProgram, "a_texcoord");
-    var textureLocation = gl.getUniformLocation(textureProgram, "u_texture");
     //var matrixLocation = gl.getUniformLocation(textureProgram, "u_matrix");
     var viewLocation = gl.getUniformLocation(textureProgram, "u_view");
     var worldLocation = gl.getUniformLocation(textureProgram, "u_world");
     var projectionLocation = gl.getUniformLocation(textureProgram, "u_projection");
     var textureMatrixLocation = gl.getUniformLocation(textureProgram, "u_textureMatrix");
     var projectedTextureLocation = gl.getUniformLocation(textureProgram, "u_projectedTexture");
+    var biasLocation = gl.getUniformLocation(textureProgram, "u_bias");
 
     var CpositionLocation = gl.getAttribLocation(colorProgram, "a_position");
-    var CcolorLocation = gl.getAttribLocation(colorProgram, "a_color");
+    var CcolorLocation = gl.getUniformLocation(colorProgram, "u_color");
     var CprojectionLocation = gl.getUniformLocation(colorProgram, "u_projection");
     var CviewLocation = gl.getUniformLocation(colorProgram, "u_view");
     var CworldLocation = gl.getUniformLocation(colorProgram, "u_world");
@@ -52,11 +81,16 @@ function main() {
     // 将颜色值传入缓冲
     setColors(gl);
 
-    // 为纹理坐标创建一个缓冲
-    var texcoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-    // 设置纹理坐标
-    setTexcoords(gl);
+    // Create a buffer to put positions in
+    var CpositionBuffer = gl.createBuffer();
+
+    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, CpositionBuffer);
+
+    // 将几何数据存到缓冲
+    CsetGeometry(gl);
+
+    gl.activeTexture(gl.TEXTURE0);
 
     const depthTexture = gl.createTexture();
     const depthTextureSize = 512;
@@ -85,6 +119,7 @@ function main() {
         depthTexture,         // texture
         0);                   // mip level
 
+    gl.activeTexture(gl.TEXTURE1);
     // 创建一个和深度纹理相同尺寸的颜色纹理
     const unusedTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, unusedTexture);
@@ -112,76 +147,45 @@ function main() {
         unusedTexture,         // texture
         0);                    // mip level
 
-    function loadImageTexture(url) {
-        // 创建一个纹理
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // 用一个 1x1 蓝色像素填充该纹理
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
-            new Uint8Array([0, 0, 255, 255]));
-        // 异步加载一张图片
-        const image = new Image();
-        image.src = url;
-        image.addEventListener('load', function () {
-            // 现在图片加载完了，把它拷贝到纹理中
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            // 假设该纹理的宽高是 2 的整次幂
-            gl.generateMipmap(gl.TEXTURE_2D);
-            render();
-        });
-        return texture;
-    }
-
-    const imageTexture = loadImageTexture('../resources/id_reversed.png');
-
-    function radToDeg(r) {
-        return r * 180 / Math.PI;
-    }
-
     function degToRad(d) {
         return d * Math.PI / 180;
     }
 
     const settings = {
-        posX: 100,
-        posY: 0,
-        posZ: -100,
+        targetX: -200,
+        projWidth: 1,
+        projHeight: 1,
     };
-
     webglLessonsUI.setupUI(document.querySelector('#ui'), settings, [
-        { type: 'slider', key: 'posX', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posY', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
-        { type: 'slider', key: 'posZ', min: -1000, max: 1000, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'targetX', min: -400, max: 10, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'projWidth', min: 0, max: 2, change: render, precision: 2, step: 0.001, },
+        { type: 'slider', key: 'projHeight', min: 0, max: 2, change: render, precision: 2, step: 0.001, },
     ]);
 
     var fieldOfViewRadians = degToRad(60);
 
-    var cubetranslation = [-350, 0, -100];
-    var linetranslation = [-100, 0, -100];
-    var fivetranslation = [-100, 0, -100];
-    var spheretranslation = [100, 0, -100];
+    var cubetranslation = [-200, 0, 0];
+    var linetranslation = [0, 0, 0];
+    var fivetranslation = [0, 0, 0];
+    var spheretranslation = [200, 0, 0];
 
     function render(time) {
         webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-
-        // 告诉WebGL如何从裁剪空间对应到像素
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        // 清空画布
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
         const lightWorldMatrix = m4.lookAt(
-            [settings.posX, settings.posY, settings.posZ],          // position
-            [settings.targetX, settings.targetY, settings.targetZ], // target
+            [-150, 200, 0],          // position
+            [settings.targetX, 0, 0], // target
             [0, 1, 0],                                              // up
         );
 
+        const lightProjectionMatrix = m4.perspective(degToRad(45), settings.projWidth / settings.projHeight, 100, 1000);
+
         // 绘制到深度纹理
         gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+        // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, depthTextureSize, depthTextureSize);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -205,19 +209,48 @@ function main() {
         var zFar = 2000;
         var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-        var camera = [100, 150, 200];
+        var camera = [100, 200, 200];
         var target = [0, 35, 0];
         var up = [0, 1, 0];
         var cameraMatrix = m4.lookAt(camera, target, up);
 
-        drawScene(projectionMatrix, cameraMatrix, textureProgram, time);
+        drawScene(projectionMatrix, cameraMatrix, textureMatrix, textureProgram, time);
+
+        // ------ Draw the frustum ------
+        {
+            const viewMatrix = m4.inverse(cameraMatrix);
+
+            gl.useProgram(colorProgramInfo.program);
+
+            // Setup all the needed attributes.
+            webglUtils.setBuffersAndAttributes(gl, colorProgramInfo, cubeLinesBufferInfo);
+
+            // scale the cube in Z so it's really long
+            // to represent the texture is being projected to
+            // infinity
+            var mat = m4.multiply(
+                lightWorldMatrix, m4.inverse(lightProjectionMatrix));
+            mat = m4.scale(mat, 2, 2, 2);
+
+            // Set the uniforms we just computed
+            webglUtils.setUniforms(colorProgramInfo, {
+                u_color: [0, 0, 0, 1],
+                u_view: viewMatrix,
+                u_projection: projectionMatrix,
+                u_world: mat,
+            });
+
+            // calls gl.drawArrays or gl.drawElements
+            webglUtils.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
+        }
+
         requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);
 
     // 绘制场景
-    function drawScene(projectionMatrix, cameraMatrix, program, time) {
+    function drawScene(projectionMatrix, cameraMatrix, textureMatrix, program, time) {
         time *= 0.0005;
 
         //var cuberotation = [-time, time, 0];
@@ -226,159 +259,190 @@ function main() {
         var fiverotation = [0, time, 0];
         var sphererotation = [-time, time, -time];
 
-        // ---绘制立方体--- BEGIN
-        // 使用我们的程序
-        gl.useProgram(program);
-
-        // 启用属性
-        gl.enableVertexAttribArray(positionLocation);
-
-        // 绑定位置缓冲
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-        // 告诉属性怎么从positionBuffer中读取数据 (ARRAY_BUFFER)
-        var size = 3;          // 每次迭代运行提取两个单位数据
-        var type = gl.FLOAT;   // 每个单位的数据类型是32位浮点型
-        var normalize = false; // 不需要归一化数据
-        var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）
-        var offset = 0;        // 从缓冲起始位置开始读取
-        gl.vertexAttribPointer(
-            positionLocation, size, type, normalize, stride, offset)
-
-        // 启用颜色属性
-        gl.enableVertexAttribArray(colorLocation);
-
-        // 绑定颜色缓冲
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-
-        // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
-        var size = 3;                 // 每次迭代使用3个单位的数据
-        var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
-        var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
-        var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
-        var offset = 0;               // 从绑定缓冲的起始处开始
-        gl.vertexAttribPointer(
-            colorLocation, size, type, normalize, stride, offset)
-
-        gl.enableVertexAttribArray(texcoordLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-        // 以浮点型格式传递纹理坐标
-        gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // 创建一个矩阵，可以将原点移动到立方体的中心
-        var moveOriginMatrix = m4.translation(-50, -50, -50);
-
         // Make a view matrix from the camera matrix.
         var viewMatrix = m4.inverse(cameraMatrix);
 
-        // Compute a view projection matrix
-        var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
+        // ---绘制立方体--- BEGIN
+        // 使用我们的程序
+        gl.useProgram(program);
+        if (program == textureProgram) {
 
-        let lightWorldMatrix = m4.lookAt(
-            [settings.posX, settings.posY, settings.posZ],          // position
-            [0, 35, 0], // target
-            [0, 1, 0],                                              // up
-        );
-        textureWorldMatrix = m4.scale(textureWorldMatrix, 100, 100, 100);
+            // 启用属性
+            gl.enableVertexAttribArray(positionLocation);
 
-        const textureMatrix = m4.inverse(textureWorldMatrix);
+            // 绑定位置缓冲
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-        var worldMatrix = m4.translation(cubetranslation[0], cubetranslation[1], cubetranslation[2]);
-        worldMatrix = m4.xRotate(worldMatrix, cuberotation[0]);
-        worldMatrix = m4.yRotate(worldMatrix, cuberotation[1]);
-        worldMatrix = m4.zRotate(worldMatrix, cuberotation[2]);
-        worldMatrix = m4.multiply(worldMatrix, moveOriginMatrix);
+            // 告诉属性怎么从positionBuffer中读取数据 (ARRAY_BUFFER)
+            var size = 3;          // 每次迭代运行提取两个单位数据
+            var type = gl.FLOAT;   // 每个单位的数据类型是32位浮点型
+            var normalize = false; // 不需要归一化数据
+            var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）
+            var offset = 0;        // 从缓冲起始位置开始读取
+            gl.vertexAttribPointer(
+                positionLocation, size, type, normalize, stride, offset)
 
-        // 设置矩阵
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, depth);
-        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        gl.uniform1i(projectedTextureLocation, 0);
+            // 启用颜色属性
+            gl.enableVertexAttribArray(colorLocation);
 
-        // 绘制几何体
-        var primitiveType = gl.TRIANGLES;
-        var offset = 0;
-        var count = 6 * 6;
-        gl.drawArrays(primitiveType, offset, count);
-        // ---绘制立方体--- END
+            // 绑定颜色缓冲
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
-        // ---绘制五角星--- BEGIN
-        // 计算矩阵
-        var worldMatrix = m4.translation(linetranslation[0], linetranslation[1], linetranslation[2]);
-        worldMatrix = m4.yRotate(worldMatrix, linerotation[1]);
+            // 告诉颜色属性怎么从 colorBuffer (ARRAY_BUFFER) 中读取颜色值
+            var size = 3;                 // 每次迭代使用3个单位的数据
+            var type = gl.UNSIGNED_BYTE;  // 单位数据类型是无符号 8 位整数
+            var normalize = true;         // 标准化数据 (从 0-255 转换到 0.0-1.0)
+            var stride = 0;               // 0 = 移动距离 * 单位距离长度sizeof(type)  每次迭代跳多少距离到下一个数据
+            var offset = 0;               // 从绑定缓冲的起始处开始
+            gl.vertexAttribPointer(
+                colorLocation, size, type, normalize, stride, offset)
 
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
+            // 创建一个矩阵，可以将原点移动到立方体的中心
+            var moveOriginMatrix = m4.translation(-50, -50, -50);
 
-        // 绘制几何体
-        var primitiveType = gl.LINE_LOOP;
-        var offset = 6 * 6;
-        var count = 5;
-        gl.drawArrays(primitiveType, offset, count);
+            var worldMatrix = m4.translation(cubetranslation[0], cubetranslation[1], cubetranslation[2]);
+            worldMatrix = m4.xRotate(worldMatrix, cuberotation[0]);
+            worldMatrix = m4.yRotate(worldMatrix, cuberotation[1]);
+            worldMatrix = m4.zRotate(worldMatrix, cuberotation[2]);
+            worldMatrix = m4.multiply(worldMatrix, moveOriginMatrix);
 
-        // 计算矩阵
-        var worldMatrix = m4.translation(fivetranslation[0], fivetranslation[1], fivetranslation[2]);
-        worldMatrix = m4.yRotate(worldMatrix, fiverotation[1]);
+            // 设置矩阵
+            gl.uniform1f(biasLocation, -0.01);
+            gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+            gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+            gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
+            gl.uniform1i(projectedTextureLocation, 0);
+            gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
 
-        // 设置矩阵
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLES;
+            var offset = 0;
+            var count = 6 * 6;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制立方体--- END
 
-        // 绘制几何体
-        var primitiveType = gl.TRIANGLE_FAN;
-        var offset = 6 * 6 + 5;
-        var count = 5;
-        gl.drawArrays(primitiveType, offset, count);
-        // ---绘制五角星--- END
+            // ---绘制五角星--- BEGIN
+            // 计算矩阵
+            var worldMatrix = m4.translation(linetranslation[0], linetranslation[1], linetranslation[2]);
+            worldMatrix = m4.yRotate(worldMatrix, linerotation[1]);
 
-        // ---绘制平面--- BEGIN
-        // 计算矩阵
-        var worldMatrix = m4.translation(0, 0, 0);
+            gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
 
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        gl.uniform1i(projectedTextureLocation, 0);
+            // 绘制几何体
+            var primitiveType = gl.LINE_LOOP;
+            var offset = 6 * 6;
+            var count = 5;
+            gl.drawArrays(primitiveType, offset, count);
 
-        // 绘制几何体
-        var primitiveType = gl.TRIANGLES;
-        var offset = 6 * 6 + 10;
-        var count = 6;
-        gl.drawArrays(primitiveType, offset, count);
-        // ---绘制平面--- END
+            // 计算矩阵
+            var worldMatrix = m4.translation(fivetranslation[0], fivetranslation[1], fivetranslation[2]);
+            worldMatrix = m4.yRotate(worldMatrix, fiverotation[1]);
 
-        // ---绘制球体--- BEGIN
-        var worldMatrix = m4.translation(spheretranslation[0], spheretranslation[1], spheretranslation[2]);
-        worldMatrix = m4.xRotate(worldMatrix, sphererotation[0]);
-        worldMatrix = m4.yRotate(worldMatrix, sphererotation[1]);
-        worldMatrix = m4.zRotate(worldMatrix, sphererotation[2]);
-        worldMatrix = m4.scale(worldMatrix, 80, 80, 80);
+            // 设置矩阵
+            gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
 
-        // 设置矩阵
-        gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
-        gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
-        gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-        gl.uniformMatrix4fv(textureMatrixLocation, false, textureMatrix);
-        //gl.uniform1i(projectedTextureLocation, 0);
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLE_FAN;
+            var offset = 6 * 6 + 5;
+            var count = 5;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制五角星--- END
 
-        // 绘制几何体
-        var primitiveType = gl.TRIANGLES;
-        var offset = 6 * 6 + 10 + 6;
-        var count = index;
-        gl.drawArrays(primitiveType, offset, count);
-        // ---绘制球体--- END
+            // ---绘制平面--- BEGIN
+            // 计算矩阵
+            var worldMatrix = m4.translation(0, 0, 0);
+
+            gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLES;
+            var offset = 6 * 6 + 10;
+            var count = 6;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制平面--- END
+
+            // ---绘制球体--- BEGIN
+            var worldMatrix = m4.translation(spheretranslation[0], spheretranslation[1], spheretranslation[2]);
+            worldMatrix = m4.xRotate(worldMatrix, sphererotation[0]);
+            worldMatrix = m4.yRotate(worldMatrix, sphererotation[1]);
+            worldMatrix = m4.zRotate(worldMatrix, sphererotation[2]);
+            worldMatrix = m4.scale(worldMatrix, 80, 80, 80);
+
+            // 设置矩阵
+            gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLES;
+            var offset = 6 * 6 + 10 + 6;
+            var count = index;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制球体--- END
+        }
+        else {
+            // 启用属性
+            gl.enableVertexAttribArray(CpositionLocation);
+
+            // 绑定位置缓冲
+            gl.bindBuffer(gl.ARRAY_BUFFER, CpositionBuffer);
+
+            // 告诉属性怎么从CpositionBuffer中读取数据 (ARRAY_BUFFER)
+            var size = 3;          // 每次迭代运行提取两个单位数据
+            var type = gl.FLOAT;   // 每个单位的数据类型是32位浮点型
+            var normalize = false; // 不需要归一化数据
+            var stride = 0;        // 0 = 移动单位数量 * 每个单位占用内存（sizeof(type)）
+            var offset = 0;        // 从缓冲起始位置开始读取
+            gl.vertexAttribPointer(
+                CpositionLocation, size, type, normalize, stride, offset)
+
+            // 创建一个矩阵，可以将原点移动到立方体的中心
+            var moveOriginMatrix = m4.translation(-50, -50, -50);
+
+            var worldMatrix = m4.translation(cubetranslation[0], cubetranslation[1], cubetranslation[2]);
+            worldMatrix = m4.xRotate(worldMatrix, cuberotation[0]);
+            worldMatrix = m4.yRotate(worldMatrix, cuberotation[1]);
+            worldMatrix = m4.zRotate(worldMatrix, cuberotation[2]);
+            worldMatrix = m4.multiply(worldMatrix, moveOriginMatrix);
+
+            // 设置矩阵
+            gl.uniform4fv(CcolorLocation, [0, 0, 1, 1]);
+            gl.uniformMatrix4fv(CworldLocation, false, worldMatrix);
+            gl.uniformMatrix4fv(CviewLocation, false, viewMatrix);
+            gl.uniformMatrix4fv(CprojectionLocation, false, projectionMatrix);
+
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLES;
+            var offset = 0;
+            var count = 6 * 6;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制立方体--- END
+
+            // ---绘制平面--- BEGIN
+            // 计算矩阵
+            var worldMatrix = m4.translation(0, 0, 0);
+
+            gl.uniform4fv(CcolorLocation, [1, 0, 0, 1]);
+            gl.uniformMatrix4fv(CworldLocation, false, worldMatrix);
+
+            // 绘制几何体
+            var primitiveType = gl.TRIANGLES;
+            var offset = 6 * 6;
+            var count = 6;
+            gl.drawArrays(primitiveType, offset, count);
+            // ---绘制平面--- END
+        }
     }
 }
 
 var m4 = {
+    identity: function () {
+        return [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ];
+    },
+
     perspective: function (fieldOfViewInRadians, aspect, near, far) {
         var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
         var rangeInv = 1.0 / (near - far);
@@ -671,7 +735,6 @@ var index = 0;
 var spherePointsArray = new Array();
 var sphereColorsArray = new Array();
 var sphereNormalsArray = new Array();
-var sphereTexcoordsArray = new Array();
 
 
 // 在缓冲存储顶点的值
@@ -720,9 +783,6 @@ function setGeometry(gl) {
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             sphereNormalsArray = sphereNormalsArray.concat(normal);
             // [(-1, 1), (-1, 1), (-1, 1)] -> [(0, 1), (0, 1)]
-            sphereTexcoordsArray.push(a[0] / 2 + 0.5, a[1] / 2 + 0.5);
-            sphereTexcoordsArray.push(b[0] / 2 + 0.5, b[1] / 2 + 0.5);
-            sphereTexcoordsArray.push(c[0] / 2 + 0.5, c[1] / 2 + 0.5);
             index += 3;
         }
     }
@@ -791,12 +851,12 @@ function setGeometry(gl) {
             100 * -1 * t * Math.cos(Math.PI * 3 / 10), 100 * t * Math.sin(Math.PI * 3 / 10), 0,
             100 * -1 * t * Math.cos(Math.PI / 10), 100 * -1 * t * Math.sin(Math.PI / 10), 0,
 
-            -200, 0, -200,
-            200, 0, 200,
-            200, 0, -200,
-            -200, 0, -200,
-            -200, 0, 200,
-            200, 0, 200)).concat(spherePointsArray)),
+            -400, -80, -200,
+            200, -80, 200,
+            200, -80, -200,
+            -400, -80, -200,
+            -400, -80, 200,
+            200, -80, 200)).concat(spherePointsArray)),
         gl.STATIC_DRAW);
 }
 
@@ -876,63 +936,65 @@ function setColors(gl) {
         gl.STATIC_DRAW);
 }
 
-function setTexcoords(gl) {
-    gl.bufferData(gl.ARRAY_BUFFER,
-        Float32Array.from(new Array(
-            0, 0,
-            0, 1,
-            1, 0,
-            0, 1,
-            1, 1,
-            1, 0,
+// 在缓冲存储顶点的值
+function CsetGeometry(gl) {
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+            // 正面
+            0, 0, 0,
+            0, 100, 0,
+            100, 0, 0,
+            0, 100, 0,
+            100, 100, 0,
+            100, 0, 0,
 
-            0, 0,
-            0, 1,
-            1, 0,
-            0, 1,
-            1, 1,
-            1, 0,
+            // 背面
+            0, 0, 100,
+            100, 0, 100,
+            0, 100, 100,
+            0, 100, 100,
+            100, 0, 100,
+            100, 100, 100,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // 顶面
+            0, 0, 0,
+            100, 0, 0,
+            100, 0, 100,
+            0, 0, 0,
+            100, 0, 100,
+            0, 0, 100,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // 右侧
+            100, 0, 0,
+            100, 100, 0,
+            100, 100, 100,
+            100, 0, 0,
+            100, 100, 100,
+            100, 0, 100,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
+            // 底面
+            0, 100, 0,
+            0, 100, 100,
+            100, 100, 100,
+            0, 100, 0,
+            100, 100, 100,
+            100, 100, 0,
 
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-            0, 0,
-        ).concat(sphereTexcoordsArray)),
+            // 左侧
+            0, 0, 0,
+            0, 0, 100,
+            0, 100, 100,
+            0, 0, 0,
+            0, 100, 100,
+            0, 100, 0,
+        
+            -400, -80, -200,
+            200, -80, 200,
+            200, -80, -200,
+            -400, -80, -200,
+            -400, -80, 200,
+            200, -80, 200]),
         gl.STATIC_DRAW);
 }
 

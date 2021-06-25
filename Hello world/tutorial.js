@@ -17,24 +17,17 @@ function main() {
   var normalLocation = gl.getAttribLocation(program, "a_normal");
 
   // lookup uniforms
-  var worldViewProjectionLocation = gl.getUniformLocation(program, "u_worldViewProjection");
-  var worldInverseTransposeLocation = gl.getUniformLocation(program, "u_worldInverseTranspose");
-  var colorLocation = gl.getUniformLocation(program, "u_color");
-  var shininessLocation = gl.getUniformLocation(program, "u_shininess");
-  var lightDirectionLocation = gl.getUniformLocation(program, "u_lightDirection");
-  var limitLocation = gl.getUniformLocation(program, "u_limit");
-  var lightWorldPositionLocation =
-      gl.getUniformLocation(program, "u_lightWorldPosition");
-  var viewWorldPositionLocation =
-      gl.getUniformLocation(program, "u_viewWorldPosition");
-  var worldLocation =
-      gl.getUniformLocation(program, "u_world");
+  var projectionLocation = gl.getUniformLocation(program, "u_projection");
+  var viewLocation = gl.getUniformLocation(program, "u_view");
+  var worldLocation = gl.getUniformLocation(program, "u_world");
+  var textureLocation = gl.getUniformLocation(program, "u_texture");
+  var worldCameraPositionLocation = gl.getUniformLocation(program, "u_worldCameraPosition");
 
-  // Create a buffer to put positions in
+  // Create a buffer for positions
   var positionBuffer = gl.createBuffer();
   // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  // Put geometry data into buffer
+  // Put the positions in the buffer
   setGeometry(gl);
 
   // Create a buffer to put normals in
@@ -43,6 +36,63 @@ function main() {
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
   // Put normals data into buffer
   setNormals(gl);
+
+  // Create a texture.
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+  const faceInfos = [
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      url: '../resources/star.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      url: '../resources/board.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      url: '../resources/board.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      url: '../resources/board.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      url: '../resources/board.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      url: '../resources/board.png',
+    },
+  ];
+  faceInfos.forEach((faceInfo) => {
+    const {target, url} = faceInfo;
+
+    // Upload the canvas to the cubemap face.
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 1024;
+    const height = 1024;
+    const format = gl.RGBA;
+    const type = gl.UNSIGNED_BYTE;
+
+    // setup each face so it's immediately renderable
+    gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+
+    // Asynchronously load an image
+    const image = new Image();
+    image.src = url;
+    image.addEventListener('load', function() {
+      // Now that the image has loaded make copy it to the texture.
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.texImage2D(target, level, internalFormat, format, type, image);
+      gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    });
+  });
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
   function radToDeg(r) {
     return r * 180 / Math.PI;
@@ -53,57 +103,39 @@ function main() {
   }
 
   var fieldOfViewRadians = degToRad(60);
-  var fRotationRadians = 0;
-  var shininess = 150;
-  var lightRotationX = 0;
-  var lightRotationY = 0;
-  var lightDirection = [0, 0, 1];  // this is computed in updateScene
-  var limit = degToRad(10);
+  var modelXRotationRadians = degToRad(0);
+  var modelYRotationRadians = degToRad(0);
+  var cameraYRotationRadians = degToRad(0);
 
-  drawScene();
+  var spinCamera = true;
+  // Get the starting time.
+  var then = 0;
 
-  // Setup a ui.
-  webglLessonsUI.setupSlider("#fRotation", {value: radToDeg(fRotationRadians), slide: updateRotation, min: -360, max: 360});
-  webglLessonsUI.setupSlider("#lightRotationX", {value: lightRotationX, slide: updatelightRotationX, min: -2, max: 2, precision: 2, step: 0.001});
-  webglLessonsUI.setupSlider("#lightRotationY", {value: lightRotationY, slide: updatelightRotationY, min: -2, max: 2, precision: 2, step: 0.001});
-  webglLessonsUI.setupSlider("#limit", {value: radToDeg(limit), slide: updateLimit, min: 0, max: 180});
-
-  function updateRotation(event, ui) {
-    fRotationRadians = degToRad(ui.value);
-    drawScene();
-  }
-
-  function updatelightRotationX(event, ui) {
-    lightRotationX = ui.value;
-    drawScene();
-  }
-
-  function updatelightRotationY(event, ui) {
-    lightRotationY = ui.value;
-    drawScene();
-  }
-
-  function updateLimit(event, ui) {
-    limit = degToRad(ui.value);
-    drawScene();
-  }
+  requestAnimationFrame(drawScene);
 
   // Draw the scene.
-  function drawScene() {
+  function drawScene(time) {
+    // convert to seconds
+    time *= 0.001;
+    // Subtract the previous time from the current time
+    var deltaTime = time - then;
+    // Remember the current time for the next frame.
+    then = time;
+
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
     // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+
+    // Animate the rotation
+    modelYRotationRadians += -0.7 * deltaTime;
+    modelXRotationRadians += -0.4 * deltaTime;
+
     // Clear the canvas AND the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Turn on culling. By default backfacing triangles
-    // will be culled.
-    gl.enable(gl.CULL_FACE);
-
-    // Enable the depth buffer
-    gl.enable(gl.DEPTH_TEST);
 
     // Tell it to use our program (pair of shaders)
     gl.useProgram(program);
@@ -140,352 +172,134 @@ function main() {
 
     // Compute the projection matrix
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    var zNear = 1;
-    var zFar = 2000;
-    var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+    var projectionMatrix =
+        m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
+    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
 
-    // Compute the camera's matrix
-    var camera = [100, 150, 200];
-    var target = [0, 35, 0];
+    var cameraPosition = [0, 0, 2];
+    var target = [0, 0, 0];
     var up = [0, 1, 0];
-    var cameraMatrix = m4.lookAt(camera, target, up);
+    // Compute the camera's matrix using look at.
+    var cameraMatrix = m4.lookAt(cameraPosition, target, up);
 
     // Make a view matrix from the camera matrix.
     var viewMatrix = m4.inverse(cameraMatrix);
 
-    // Compute a view projection matrix
-    var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
+    var worldMatrix = m4.xRotation(modelXRotationRadians);
+    worldMatrix = m4.yRotate(worldMatrix, modelYRotationRadians);
 
-    // Draw a F at the origin
-    var worldMatrix = m4.yRotation(fRotationRadians);
-
-    // Multiply the matrices.
-    var worldViewProjectionMatrix = m4.multiply(viewProjectionMatrix, worldMatrix);
-    var worldInverseMatrix = m4.inverse(worldMatrix);
-    var worldInverseTransposeMatrix = m4.transpose(worldInverseMatrix);
-
-    // Set the matrices
-    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix);
-    gl.uniformMatrix4fv(worldInverseTransposeLocation, false, worldInverseTransposeMatrix);
+    // Set the uniforms
+    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
     gl.uniformMatrix4fv(worldLocation, false, worldMatrix);
+    gl.uniform3fv(worldCameraPositionLocation, cameraPosition);
 
-    // Set the color to use
-    gl.uniform4fv(colorLocation, [0.2, 1, 0.2, 1]); // green
-
-    // set the light position
-    const lightPosition = [40, 60, 120];
-    gl.uniform3fv(lightWorldPositionLocation, lightPosition);
-
-    // set the camera/view position
-    gl.uniform3fv(viewWorldPositionLocation, camera);
-
-    // set the shininess
-    gl.uniform1f(shininessLocation, shininess);
-
-    // set the spotlight uniforms
-
-    // since we don't have a plane like most spotlight examples
-    // let's point the spot light at the F
-    {
-        var lmat = m4.lookAt(lightPosition, target, up);
-        lmat = m4.multiply(m4.xRotation(lightRotationX), lmat);
-        lmat = m4.multiply(m4.yRotation(lightRotationY), lmat);
-        // get the zAxis from the matrix
-        // negate it because lookAt looks down the -Z axis
-        lightDirection = [-lmat[8], -lmat[9],-lmat[10]];
-    }
-
-    gl.uniform3fv(lightDirectionLocation, lightDirection);
-    gl.uniform1f(limitLocation, Math.cos(limit));
+    // Tell the shader to use texture unit 0 for u_texture
+    gl.uniform1i(textureLocation, 0);
 
     // Draw the geometry.
-    var primitiveType = gl.TRIANGLES;
-    var offset = 0;
-    var count = 16 * 6;
-    gl.drawArrays(primitiveType, offset, count);
+    gl.drawArrays(gl.TRIANGLES, 0, 6 * 6);
+
+    requestAnimationFrame(drawScene);
   }
 }
 
-// Fill the buffer with the values that define a letter 'F'.
+// Fill the buffer with the values that define a cube.
 function setGeometry(gl) {
-  var positions = new Float32Array([
-          // left column front
-          0,   0,  0,
-          0, 150,  0,
-          30,   0,  0,
-          0, 150,  0,
-          30, 150,  0,
-          30,   0,  0,
+  var positions = new Float32Array(
+    [
+    -0.5, -0.5,  -0.5,
+    -0.5,  0.5,  -0.5,
+     0.5, -0.5,  -0.5,
+    -0.5,  0.5,  -0.5,
+     0.5,  0.5,  -0.5,
+     0.5, -0.5,  -0.5,
 
-          // top rung front
-          30,   0,  0,
-          30,  30,  0,
-          100,   0,  0,
-          30,  30,  0,
-          100,  30,  0,
-          100,   0,  0,
+    -0.5, -0.5,   0.5,
+     0.5, -0.5,   0.5,
+    -0.5,  0.5,   0.5,
+    -0.5,  0.5,   0.5,
+     0.5, -0.5,   0.5,
+     0.5,  0.5,   0.5,
 
-          // middle rung front
-          30,  60,  0,
-          30,  90,  0,
-          67,  60,  0,
-          30,  90,  0,
-          67,  90,  0,
-          67,  60,  0,
+    -0.5,   0.5, -0.5,
+    -0.5,   0.5,  0.5,
+     0.5,   0.5, -0.5,
+    -0.5,   0.5,  0.5,
+     0.5,   0.5,  0.5,
+     0.5,   0.5, -0.5,
 
-          // left column back
-            0,   0,  30,
-           30,   0,  30,
-            0, 150,  30,
-            0, 150,  30,
-           30,   0,  30,
-           30, 150,  30,
+    -0.5,  -0.5, -0.5,
+     0.5,  -0.5, -0.5,
+    -0.5,  -0.5,  0.5,
+    -0.5,  -0.5,  0.5,
+     0.5,  -0.5, -0.5,
+     0.5,  -0.5,  0.5,
 
-          // top rung back
-           30,   0,  30,
-          100,   0,  30,
-           30,  30,  30,
-           30,  30,  30,
-          100,   0,  30,
-          100,  30,  30,
+    -0.5,  -0.5, -0.5,
+    -0.5,  -0.5,  0.5,
+    -0.5,   0.5, -0.5,
+    -0.5,  -0.5,  0.5,
+    -0.5,   0.5,  0.5,
+    -0.5,   0.5, -0.5,
 
-          // middle rung back
-           30,  60,  30,
-           67,  60,  30,
-           30,  90,  30,
-           30,  90,  30,
-           67,  60,  30,
-           67,  90,  30,
+     0.5,  -0.5, -0.5,
+     0.5,   0.5, -0.5,
+     0.5,  -0.5,  0.5,
+     0.5,  -0.5,  0.5,
+     0.5,   0.5, -0.5,
+     0.5,   0.5,  0.5,
 
-          // top
-            0,   0,   0,
-          100,   0,   0,
-          100,   0,  30,
-            0,   0,   0,
-          100,   0,  30,
-            0,   0,  30,
-
-          // top rung right
-          100,   0,   0,
-          100,  30,   0,
-          100,  30,  30,
-          100,   0,   0,
-          100,  30,  30,
-          100,   0,  30,
-
-          // under top rung
-          30,   30,   0,
-          30,   30,  30,
-          100,  30,  30,
-          30,   30,   0,
-          100,  30,  30,
-          100,  30,   0,
-
-          // between top rung and middle
-          30,   30,   0,
-          30,   60,  30,
-          30,   30,  30,
-          30,   30,   0,
-          30,   60,   0,
-          30,   60,  30,
-
-          // top of middle rung
-          30,   60,   0,
-          67,   60,  30,
-          30,   60,  30,
-          30,   60,   0,
-          67,   60,   0,
-          67,   60,  30,
-
-          // right of middle rung
-          67,   60,   0,
-          67,   90,  30,
-          67,   60,  30,
-          67,   60,   0,
-          67,   90,   0,
-          67,   90,  30,
-
-          // bottom of middle rung.
-          30,   90,   0,
-          30,   90,  30,
-          67,   90,  30,
-          30,   90,   0,
-          67,   90,  30,
-          67,   90,   0,
-
-          // right of bottom
-          30,   90,   0,
-          30,  150,  30,
-          30,   90,  30,
-          30,   90,   0,
-          30,  150,   0,
-          30,  150,  30,
-
-          // bottom
-          0,   150,   0,
-          0,   150,  30,
-          30,  150,  30,
-          0,   150,   0,
-          30,  150,  30,
-          30,  150,   0,
-
-          // left side
-          0,   0,   0,
-          0,   0,  30,
-          0, 150,  30,
-          0,   0,   0,
-          0, 150,  30,
-          0, 150,   0]);
-
-  // Center the F around the origin and Flip it around. We do this because
-  // we're in 3D now with and +Y is up where as before when we started with 2D
-  // we had +Y as down.
-
-  // We could do by changing all the values above but I'm lazy.
-  // We could also do it with a matrix at draw time but you should
-  // never do stuff at draw time if you can do it at init time.
-  var matrix = m4.xRotation(Math.PI);
-  matrix = m4.translate(matrix, -50, -75, -15);
-
-  for (var ii = 0; ii < positions.length; ii += 3) {
-    var vector = m4.transformPoint(matrix, [positions[ii + 0], positions[ii + 1], positions[ii + 2], 1]);
-    positions[ii + 0] = vector[0];
-    positions[ii + 1] = vector[1];
-    positions[ii + 2] = vector[2];
-  }
-
+    ]);
   gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 }
 
+// Fill the buffer with normals for cube
 function setNormals(gl) {
-  var normals = new Float32Array([
-          // left column front
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
+  var normals = new Float32Array(
+    [
+       0, 0, -1,
+       0, 0, -1,
+       0, 0, -1,
+       0, 0, -1,
+       0, 0, -1,
+       0, 0, -1,
 
-          // top rung front
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
+       0, 0, 1,
+       0, 0, 1,
+       0, 0, 1,
+       0, 0, 1,
+       0, 0, 1,
+       0, 0, 1,
 
-          // middle rung front
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
-          0, 0, 1,
+       0, 1, 0,
+       0, 1, 0,
+       0, 1, 0,
+       0, 1, 0,
+       0, 1, 0,
+       0, 1, 0,
 
-          // left column back
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
+       0, -1, 0,
+       0, -1, 0,
+       0, -1, 0,
+       0, -1, 0,
+       0, -1, 0,
+       0, -1, 0,
 
-          // top rung back
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
 
-          // middle rung back
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-          0, 0, -1,
-
-          // top
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-
-          // top rung right
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-
-          // under top rung
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-
-          // between top rung and middle
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-
-          // top of middle rung
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-          0, 1, 0,
-
-          // right of middle rung
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-
-          // bottom of middle rung.
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-
-          // right of bottom
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-          1, 0, 0,
-
-          // bottom
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-          0, -1, 0,
-
-          // left side
-          -1, 0, 0,
-          -1, 0, 0,
-          -1, 0, 0,
-          -1, 0, 0,
-          -1, 0, 0,
-          -1, 0, 0]);
+       1, 0, 0,
+       1, 0, 0,
+       1, 0, 0,
+       1, 0, 0,
+       1, 0, 0,
+       1, 0, 0,
+    ]);
   gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
 }
 

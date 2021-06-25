@@ -14,107 +14,11 @@
 
 ### 1. 纹理映射
 
-```javascript
-var va = [0, 0, -1];
-var vb = [0, 0.942809, 0.333333];
-var vc = [-0.816497, -0.471405, 0.333333];
-var vd = [0.816497, -0.471405, 0.333333];
+使用透视投影的方式将贴图投影到球体上。
 
-tetrahedron(va, vb, vc, vd, 4);
+加载纹理，在片断着色器中判断纹理坐标，在范围内的使用贴图纹理，在范围外的使用原有颜色。
 
-function tetrahedron(a, b, c, d, n) {
-    devideTriangle(a, b, c, n);
-    devideTriangle(d, c, b, n);
-    devideTriangle(a, d, b, n);
-    devideTriangle(a, c, d, n);
-}
-
-function devideTriangle(a, b, c, count) {
-    if (count > 0) {
-        var ab = normalize(mix(a, b, 0.5));
-        var ac = normalize(mix(a, c, 0.5));
-        var bc = normalize(mix(b, c, 0.5));
-
-        devideTriangle(a, ab, ac, count - 1);
-        devideTriangle(ab, b, bc, count - 1);
-        devideTriangle(bc, c, ac, count - 1);
-        devideTriangle(ab, bc, ac, count - 1);
-    }
-    else {
-        spherePointsArray = spherePointsArray.concat(a);
-        spherePointsArray = spherePointsArray.concat(b);
-        spherePointsArray = spherePointsArray.concat(c);
-        sphereColorsArray.push(Math.sqrt(a[0] * a[0]) * 256, Math.sqrt(a[1] * a[1]) * 256, Math.sqrt(a[2] * a[2]) * 256);
-        sphereColorsArray.push(Math.sqrt(b[0] * b[0]) * 256, Math.sqrt(b[1] * b[1]) * 256, Math.sqrt(b[2] * b[2]) * 256);
-        sphereColorsArray.push(Math.sqrt(c[0] * c[0]) * 256, Math.sqrt(c[1] * c[1]) * 256, Math.sqrt(c[2] * c[2]) * 256);
-        index += 3;
-    }
-}
-```
-
-参考教材，采用递归细分法。将正四面体各棱中点相连，归一化。达到目标细分层数后，将顶点存入数组。
-
-相比于球面，线框效果较明显，展示时使用线框绘制结果。根据细分程度不同，有：
-
-![](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron3.png)
-
-![](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron4.png)
-
-![tetrahedron5](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron5.png)
-
-![tetrahedron6](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\tetrahedron6.png)
-
-当细分度为6时，顶点数达49152，有较明显的计算时间。
-
-### 2. 透视投影
-
-```javascript
-perspective: function(fieldOfViewInRadians, aspect, near, far) {
-    var f = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfViewInRadians);
-    var rangeInv = 1.0 / (near - far);
-
-    return [
-    f / aspect, 0, 0, 0,
-    0, f, 0, 0,
-    0, 0, (near + far) * rangeInv, -1,
-    0, 0, near * far * rangeInv * 2, 0
-    ];
-}
-```
-
-设定视锥，通过矩阵将视锥中的空间转换到裁剪空间中， `zNear` 决定了被正面切割的位置，`zFar` 决定被背面切割的位置。
-
-将物体放到视图范围内，对立方体、五角星和球体进行适当平移。
-
-![perspective](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\perspective.png)
-
-可明显观察到“近大远小”的透视效果。
-
-### 3. 光照
-
-#### 1）方向光源
-
-给物体设置法向量，其中球体的法向量用三点的坐标叉乘得到。为方便观察效果，将立方体及球体更改为单色。
-
-同时，在物体重定向时重定向法向量，使面朝相机的一面被照亮。
-
-![方向光源](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-directional.png)
-
-#### 2）点光源
-
-相比于方向光源，点光源根据光源和表面位置计算光照方向。
-
-同时，加上镜面高光，当方向一致时，光线反射。
-
-![点光源](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-point.png)
-
-#### 4）聚光灯
-
-在点光源的基础上，设置限定范围，当光线不在限定范围时不照亮。使用内部限定和外部限定两个限定值，两者之间使用插值。
-
-![lighting-spot](D:\OneDrive - buaa.edu.cn\documents\WebGL\homework3\lighting-spot.png)
-
-### 4. 阴影
+### 2. 环境贴图
 
 
 

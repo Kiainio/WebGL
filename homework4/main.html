@@ -1,10 +1,14 @@
 <canvas id="canvas" width="600" height="300"></canvas>
+<div id="uiContainer">
+    <div id="ui">
+    </div>
+</div>
 
 <!-- vertex shader -->
 <script id="vertex-shader-3d" type="x-shader/x-vertex">
     attribute vec4 a_position;
     attribute vec4 a_color;
-    attribute vec2 a_texcoord;
+    attribute vec3 a_normal;
 
     uniform mat4 u_projection;
     uniform mat4 u_view;
@@ -12,8 +16,9 @@
     uniform mat4 u_textureMatrix;
 
     varying vec4 v_color;
-    varying vec2 v_texcoord;
     varying vec4 v_projectedTexcoord;
+    varying vec3 v_worldPosition;
+    varying vec3 v_worldNormal;
      
     void main() {
         vec4 worldPosition = u_world * a_position;
@@ -26,24 +31,36 @@
         v_color = a_color;
 
         // 传递纹理坐标到片断着色器
-        v_texcoord = a_texcoord;
 
         v_projectedTexcoord = u_textureMatrix * worldPosition;
+
+        // 传递世界位置给片断着色器
+        v_worldPosition = worldPosition.xyz;
+
+        // 转换法线并传递给片断着色器
+        v_worldNormal = mat3(u_world) * a_normal;
     }
 </script>
 
 <!-- fragment shader -->
 <script id="fragment-shader-3d" type="x-shader/x-fragment">
-    precision mediump float;
+    precision highp float;
 
     // 从顶点着色器中传入
     varying vec4 v_color;
-    varying vec2 v_texcoord;
     varying vec4 v_projectedTexcoord;
+    varying vec3 v_worldPosition;
+    varying vec3 v_worldNormal;
 
     // 纹理
-    uniform sampler2D u_texture;
     uniform sampler2D u_projectedTexture;
+    uniform samplerCube u_texture;
+
+    // 相机位置
+    uniform vec3 u_worldCameraPosition;
+
+    // 物体编号
+    uniform int u_id;
 
     void main() {
         // 除以 w 得到正确的值
@@ -56,9 +73,23 @@
             projectedTexcoord.y <= 1.0;
         
         vec4 projectedTexColor = texture2D(u_projectedTexture, projectedTexcoord.xy);
+
+        vec3 worldNormal = normalize(v_worldNormal);
+        vec3 eyeToSurfaceDir = normalize(v_worldPosition - u_worldCameraPosition);
+        vec3 direction = reflect(eyeToSurfaceDir, worldNormal);
+
+        vec4 cubeTexColor = textureCube(u_texture, direction);
         
         float projectedAmount = inRange ? 1.0 : 0.0;
-        gl_FragColor = mix(v_color, projectedTexColor, projectedAmount);
+        if (u_id == 2) {
+            gl_FragColor = mix(v_color, projectedTexColor, projectedAmount);
+        }
+        else if (u_id == 0){
+            gl_FragColor = cubeTexColor;
+        }
+        else {
+            gl_FragColor = v_color;
+        }
     }
 </script>
 
