@@ -25,9 +25,10 @@
 
 ## 02 文件树
 
+```
 WebGL
-│  readme.md
-│
+│  readme.md        
+│  
 ├─Hello world
 │      2d-matrices.css
 │      2d-matrices.html
@@ -110,6 +111,7 @@ WebGL
 │      shadows.css
 │      shadows.html
 │      shadows.js
+│      shadows.png
 │      tetrahedron3.png
 │      tetrahedron4.png
 │      tetrahedron5.png
@@ -120,36 +122,38 @@ WebGL
 │      main.html
 │      main.js
 │      readme.md
+│      result.png
 │      texture.png
 │
 └─resources
-     board.png
-     board_scaled.png
-     board_scaled.psd
-     f-texture.png
-     id.png
-     id.psd
-     id_reversed.png
-     jquery-1.7.1.min.js
-     jquery-gman-circle.js
-     jquery-ui-1.8.16.custom.css
-     jquery-ui-1.8.16.custom.min.js
-     jquery.gman.ui.js
-     jquery.mousecapture.js
-     m4.js
-     neg-x.jpg
-     neg-y.jpg
-     neg-z.jpg
-     pos-x.jpg
-     pos-y.jpg
-     pos-z.jpg
-     primitives.js
-     star.png
-     star.psd
-     star_empty.png
-     webgl-lessons-ui.js
-     webgl-utils.js
-     webgl.css
+        board.png
+        board_scaled.png
+        board_scaled.psd
+        f-texture.png
+        id.png
+        id.psd
+        id_reversed.png
+        jquery-1.7.1.min.js
+        jquery-gman-circle.js
+        jquery-ui-1.8.16.custom.css
+        jquery-ui-1.8.16.custom.min.js
+        jquery.gman.ui.js
+        jquery.mousecapture.js
+        m4.js
+        neg-x.jpg
+        neg-y.jpg
+        neg-z.jpg
+        pos-x.jpg
+        pos-y.jpg
+        pos-z.jpg
+        primitives.js
+        star.png
+        star.psd
+        star_empty.png
+        webgl-lessons-ui.js
+        webgl-utils.js
+        webgl.css
+```
 
 - `Hello world`文件夹为完成实验作业过程中学习、试验内容
 
