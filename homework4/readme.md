@@ -20,9 +20,22 @@
 
 ### 2. 环境贴图
 
+使用256*256立方体贴图
 
+- positive_x：
+
+  ![star.png](../resources/star.png)
+
+- 其余五面
+
+  ![board.png](../resources/board_scaled.png)
+
+通过GLSL的内置函数`reflect`计算反射。
 
 ## 03 效果展示
 
-[方向光源]: ./lighting-directional.html
-[github]: https://kiainio.github.io/WebGL/homework3/lighting-directional.html
+[本地](./main.html)（需通过服务器打开，可参考[](../readme.md/##01-作业说明)
+
+[github](https://kiainio.github.io/WebGL/homework4/main.html)
+
+![result](./result.png)

@@ -230,7 +230,6 @@ function main() {
             // infinity
             var mat = m4.multiply(
                 lightWorldMatrix, m4.inverse(lightProjectionMatrix));
-            mat = m4.scale(mat, 2, 2, 2);
 
             // Set the uniforms we just computed
             webglUtils.setUniforms(colorProgramInfo, {

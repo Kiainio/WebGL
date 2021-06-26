@@ -118,15 +118,22 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 
 ### 4. 阴影
 
+使用阴影映射(shadow map)绘制，使用`WEBGL_depth_texture`拓展，将深度纹理附加到帧缓冲上。使用一组简单的着色器，从光源角度，将立方体渲染到深度纹理。随后绘制场景到画布，把深度纹理投影到场景内。
 
+![shadows](./shadows.png)
 
 ## 03 效果展示
 
-[透视投影]: ./main.html
-[方向光源]: ./lighting-directional.html
-[点光源]: ./lighting-point.html
-[聚光灯]:./lighting-spot.html
-[github-透视投影]: https://kiainio.github.io/WebGL/homework3/main.html
-[github-方向光源]:https://kiainio.github.io/WebGL/homework3/lighting-directional.html
-[github-点光源]:https://kiainio.github.io/WebGL/homework3/lighting-point.html
-[github-聚光灯]:https://kiainio.github.io/WebGL/homework3/lighting-spot.html
+- 本地
+  - [透视投影](./main/html)
+  - [方向光源](./lighting-directional.html)
+  - [点光源](./lighting-point.html )
+  - [聚光灯](./lighting-spot.html )
+  - [阴影](./shadows.html)
+- github
+  - [透视投影](https://kiainio.github.io/WebGL/homework3/main.html)
+  - [方向光源](https://kiainio.github.io/WebGL/homework3/lighting-directional.html)
+  - [点光源](https://kiainio.github.io/WebGL/homework3/lighting-point.html )
+  - [聚光灯](https://kiainio.github.io/WebGL/homework3/lighting-spot.html )
+  - [阴影](https://kiainio.github.io/WebGL/homework3/shadows.html)
+

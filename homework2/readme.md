@@ -178,7 +178,9 @@ var m4 = {
 
 ## 03 效果展示
 
-[main.html]: ./main.html
-[github]: https://kiainio.github.io/WebGL/homework2/main.html
+[本地](./main.html)
+
+[github](https://kiainio.github.io/WebGL/homework2/main.html)
 
 ![result](./result.png)
+
