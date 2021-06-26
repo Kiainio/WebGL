@@ -125,7 +125,7 @@ perspective: function(fieldOfViewInRadians, aspect, near, far) {
 ## 03 效果展示
 
 - 本地
-  - [透视投影](./main/html)
+  - [透视投影](./main.html)
   - [方向光源](./lighting-directional.html)
   - [点光源](./lighting-point.html )
   - [聚光灯](./lighting-spot.html )

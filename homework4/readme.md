@@ -34,7 +34,7 @@
 
 ## 03 效果展示
 
-[本地](./main.html)（需通过服务器打开，可参考[](../readme.md/##01-作业说明)
+[本地](./main.html)（需通过服务器打开，可参考[作业说明](../readme.md/##01-作业说明)
 
 [github](https://kiainio.github.io/WebGL/homework4/main.html)
 
