@@ -100,13 +100,13 @@ $t=\frac{1+\tan^218^{\circ}}{3-\tan^218^{\circ}}$，
 
 $AA(0, -t)$
 
-$BB(-t*\cos18^{\circ},-t*\sin18^{\circ})$
+$BB(-\cos18^{\circ}t,-\sin18^{\circ}t)$
 
-$CC(-t*\cos54^{\circ},t*\sin54^{\circ})$
+$CC(-\cos54^{\circ}t,\sin54^{\circ}t)$
 
-$DD(t*\cos54^{\circ},t*\sin54^{\circ})$
+$DD(\cos54^{\circ}t,\sin54^{\circ}t)$
 
-$EE(t*\cos18^{\circ},-t*\sin18^{\circ})$.
+$EE(\cos18^{\circ}t,-\sin18^{\circ}t)$.
 
 用$200 + 100 * x, 150 + 100 * y$作为五角星10个点的像素坐标。
 
